@@ -1,8 +1,6 @@
 export async function onRequest({ request, params, env }) {
     const method = request.method;
 
-    // 通过动态路由参数获取 id（比 URL 解析更可靠）
-    // params.id 对应 [[id]] 捕获的部分，如 /api/blog/123 => "123"
     const rawId = params?.id ?? null;
     const id = rawId ? Number(rawId) : null;
 
@@ -49,6 +47,10 @@ export async function onRequest({ request, params, env }) {
                 return new Response(JSON.stringify({ code: 404, message: '文章不存在' }), {
                     status: 404, headers: commonHeaders
                 });
+            }
+            // 处理 pinned 字段
+            if ('pinned' in body) {
+                body.pinned = body.pinned === true || body.pinned === 'true';
             }
             posts[idx] = Object.assign({}, posts[idx], body, {
                 id: posts[idx].id,
