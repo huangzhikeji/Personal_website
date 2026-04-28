@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "routes": [
+    {
+      "routePath": "/",
+      "handler": "[[catchall]]"
+    },
+    {
+      "routePath": "/*",
+      "handler": "[[catchall]]"
+    },
+    {
+      "routePath": "/admin",
+      "handler": "admin"
+    },
+    {
+      "routePath": "/admin/*",
+      "handler": "admin"
+    },
+    {
+      "routePath": "/logout",
+      "handler": "logout"
+    },
+    {
+      "routePath": "/api/change-password",
+      "handler": "api/change-password"
+    },
+    {
+      "routePath": "/api/blog",
+      "handler": "api/blog"
+    },
+    {
+      "routePath": "/api/blog/*",
+      "handler": "api/blog/[[id]]"
+    },
+    {
+      "routePath": "/api/config",
+      "handler": "api/config"
+    },
+    {
+      "routePath": "/api/config/*",
+      "handler": "api/config/[id]"
+    },
+    {
+      "routePath": "/api/header-bg",
+      "handler": "api/header-bg"
+    },
+    {
+      "routePath": "/api/image/*",
+      "handler": "api/image/[filename]"
+    },
+    {
+      "routePath": "/api/logo",
+      "handler": "api/logo"
+    },
+    {
+      "routePath": "/api/logo-link",
+      "handler": "api/logo-link"
+    },
+    {
+      "routePath": "/api/search",
+      "handler": "api/search"
+    },
+    {
+      "routePath": "/api/sitemap",
+      "handler": "api/sitemap"
+    },
+    {
+      "routePath": "/api/stats",
+      "handler": "api/stats"
+    },
+    {
+      "routePath": "/api/upload",
+      "handler": "api/upload"
+    },
+    {
+      "routePath": "/post/*",
+      "handler": "post/[[slug]]"
+    },
+    {
+      "routePath": "/api/site-info",
+      "handler": "api/site-info"
+    }
+  ]
+}
