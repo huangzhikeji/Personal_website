@@ -1,8 +1,7 @@
 export async function onRequest({ request, params, env }) {
     const method = request.method;
     const url = new URL(request.url);
-    // 路径: /api/blog 或 /api/blog/:id
-    const parts = url.pathname.split('/').filter(Boolean); // ['api','blog'] 或 ['api','blog','123']
+    const parts = url.pathname.split('/').filter(Boolean);
     const id = parts[2] ? Number(parts[2]) : null;
 
     const commonHeaders = {
@@ -21,7 +20,36 @@ export async function onRequest({ request, params, env }) {
         try {
             const data = await NAV_KV.get('blog_posts');
             const posts = data ? JSON.parse(data) : [];
-            return new Response(JSON.stringify({ code: 200, data: posts }), {
+
+            // 判断是否为后台请求（带 admin_token cookie）
+            const cookie = request.headers.get('Cookie') || '';
+            const match = cookie.match(/admin_token=([^;]+)/);
+            let isAdmin = false;
+            if (match) {
+                const session = await NAV_KV.get(`session:${match[1]}`);
+                isAdmin = session !== null;
+            }
+
+            let result;
+            if (isAdmin) {
+                // 后台：返回完整数据（含 pinned 字段），置顶文章排前
+                result = [...posts].sort((a, b) => {
+                    if (b.pinned && !a.pinned) return 1;
+                    if (a.pinned && !b.pinned) return -1;
+                    return 0;
+                });
+            } else {
+                // 前台：隐藏 pinned 字段，置顶文章仍排前
+                result = [...posts]
+                    .sort((a, b) => {
+                        if (b.pinned && !a.pinned) return 1;
+                        if (a.pinned && !b.pinned) return -1;
+                        return 0;
+                    })
+                    .map(({ pinned, ...rest }) => rest);
+            }
+
+            return new Response(JSON.stringify({ code: 200, data: result }), {
                 headers: commonHeaders
             });
         } catch (e) {
@@ -63,6 +91,7 @@ export async function onRequest({ request, params, env }) {
                 excerpt: body.excerpt || (body.content || '').substring(0, 150).replace(/<[^>]*>/g, ''),
                 status: body.status || 'published',
                 tags: Array.isArray(body.tags) ? body.tags : [],
+                pinned: body.pinned === true || body.pinned === 'true',
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
             };
@@ -77,7 +106,6 @@ export async function onRequest({ request, params, env }) {
             });
         }
     }
-
 
     return new Response(JSON.stringify({ code: 405, message: 'Method Not Allowed' }), {
         status: 405, headers: commonHeaders
