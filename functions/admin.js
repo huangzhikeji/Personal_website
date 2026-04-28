@@ -161,6 +161,7 @@ export async function onRequest({ request, env }) {
         .status-badge{padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600}
         .status-published{background:#d4edda;color:#155724}
         .status-draft{background:#fff3cd;color:#856404}
+        .pin-badge{display:inline-flex;align-items:center;gap:2px;padding:1px 6px;border-radius:20px;font-size:11px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #f59e0b;margin-left:4px;vertical-align:middle}
         /* 博客弹窗（宽一些，放 Quill） */
         .blog-modal-content{background:white;border-radius:14px;padding:28px;width:95%;max-width:860px;max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
         /* Quill 编辑器 */
@@ -297,6 +298,7 @@ export async function onRequest({ request, env }) {
         \u003cdiv id="quill-editor-wrap">\u003cdiv id="quill-editor">\u003c/div>\u003c/div>
         \u003ctextarea id="postContent" style="display:none">\u003c/textarea>
         \u003cdiv class="form-group">\u003clabel>标签\u003c/label>\u003cinput type="text" id="postTags" placeholder="技术,生活">\u003c/div>
+        \u003cdiv class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px">\u003cinput type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b">\u003clabel for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">📌 置顶文章 \u003csmall style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）\u003c/small>\u003c/label>\u003c/div>
         \u003cdiv class="form-actions">
             \u003cbutton type="button" id="cancelPostBtn" class="btn-secondary">取消\u003c/button>
             \u003cbutton type="button" id="savePostBtn" class="btn-success">保存\u003c/button>
@@ -700,7 +702,7 @@ export async function onRequest({ request, env }) {
                 ? '<span class="status-badge status-published">已发布</span>'
                 : '<span class="status-badge status-draft">草稿</span>';
             const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('zh-CN') : '-';
-            h += '<tr><td>' + p.id + '</td><td><strong>' + escapeHtml(p.title) + '</strong></td><td>' + escapeHtml(p.category || '未分类') + '</td><td>' + badge + '</td><td>' + date + '</td><td class="actions"><button class="btn-warning blog-edit" data-id="' + p.id + '">编辑</button><button class="btn-danger blog-del" data-id="' + p.id + '">删除</button></td></tr>';
+            h += '<tr><td>' + p.id + '</td><td><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge">📌 置顶</span>' : '') + '</td><td>' + escapeHtml(p.category || '未分类') + '</td><td>' + badge + '</td><td>' + date + '</td><td class="actions"><button class="btn-warning blog-edit" data-id="' + p.id + '">编辑</button><button class="btn-danger blog-del" data-id="' + p.id + '">删除</button></td></tr>';
         });
         h += '</tbody></table>';
         document.getElementById('blogList').innerHTML = h;
@@ -721,6 +723,7 @@ export async function onRequest({ request, env }) {
             document.getElementById('postExcerpt').value = p.excerpt || '';
             document.getElementById('postStatus').value = p.status || 'published';
             document.getElementById('postTags').value = (p.tags || []).join(',');
+            document.getElementById('postPinned').checked = !!p.pinned;
             quill.root.innerHTML = p.content || '';
             document.getElementById('postContent').value = quill.root.innerHTML;
             document.getElementById('postModalTitle').innerText = '编辑文章';
@@ -732,6 +735,7 @@ export async function onRequest({ request, env }) {
             document.getElementById('postExcerpt').value = '';
             document.getElementById('postStatus').value = 'published';
             document.getElementById('postTags').value = '';
+            document.getElementById('postPinned').checked = false;
             quill.root.innerHTML = '';
             document.getElementById('postContent').value = '';
             document.getElementById('postModalTitle').innerText = '写新文章';
@@ -761,7 +765,8 @@ export async function onRequest({ request, env }) {
             excerpt: document.getElementById('postExcerpt').value.trim(),
             content: document.getElementById('postContent').value,
             status: document.getElementById('postStatus').value,
-            tags: document.getElementById('postTags').value.split(',').map(t => t.trim()).filter(t => t)
+            tags: document.getElementById('postTags').value.split(',').map(t => t.trim()).filter(t => t),
+            pinned: document.getElementById('postPinned').checked
         };
         if (!data.title || !data.content || data.content === '<p><br></p>') { alert('请填写标题和内容'); return; }
         const url = id ? '/api/blog/' + id : '/api/blog';
