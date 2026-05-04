@@ -69,11 +69,10 @@ export async function onRequest({ env, request }) {
         return `<a href="/?tab=blog&tag=${encodeURIComponent(tag)}" style="display:inline-block;margin:4px;padding:4px 12px;background:#f0f0f0;border-radius:20px;text-decoration:none;color:#667eea;font-size:${size}px">${escapeHtml(tag)}(${count})</a>`;
     }).join('');
     
-    let blogListHtml = blogPosts.map(post => {
-        const views = viewsMap.get(post.id) || 0;
-        const pinnedBadge = post.pinned ? '<span class="pin-badge" style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:12px;font-size:11px;margin-left:8px">📌置顶</span>' : '';
-        return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}${pinnedBadge}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : ''}</div></div>`;
-    }).join('');
+let blogListHtml = blogPosts.map(post => {
+    const views = viewsMap.get(post.id) || 0;
+    return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : ''}</div></div>`;
+}).join('');
     if (!blogListHtml) blogListHtml = '<div style="text-align:center;padding:60px">暂无文章</div>';
     
     const hotPosts = [...blogPosts].sort((a, b) => (viewsMap.get(b.id) || 0) - (viewsMap.get(a.id) || 0)).slice(0, 5);
