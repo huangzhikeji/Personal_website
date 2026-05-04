@@ -1,0 +1,290 @@
+# 旭儿导航 · EdgeOne Pages 完整版
+
+基于腾讯云 EdgeOne Pages 构建的全栈个人网站，支持书签导航和博客管理。所有数据存储在 EdgeOne KV 中，无需数据库，零冷启动。
+
+---
+
+## 📁 完整文件结构及功能说明
+
+项目根目录/
+│
+├── .edgeone/ # EdgeOne Pages 配置目录
+│ └── functions.json # 路由配置文件，将所有 URL 路径映射到对应的云函数
+│
+├── functions/ # 云函数目录（所有后端逻辑）
+│ │
+│ ├── index.js # 入口文件，重导出 [[catchall]].js
+│ │
+│ ├── [[catchall]].js # 🌟 主入口文件（核心）
+│ │ └── 功能：首页渲染、书签卡片、博客列表、标签云、侧边栏、热门文章、国内线路按钮
+│ │
+│ ├── _middleware.js # 全局中间件
+│ │ └── 功能：处理退出登录、放行静态资源和 API 请求
+│ │
+│ ├── admin.js # 后台管理页面
+│ │ └── 功能：管理员登录、文章管理（发布/编辑/删除）、书签管理（添加/编辑/删除）、
+│ │ 站点设置（标题/副标题/Logo/背景图）、修改密码
+│ │
+│ ├── logout.js # 退出登录处理
+│ │ └── 功能：清除 session 和 Cookie，跳转首页
+│ │
+│ ├── post/ # 文章详情页目录
+│ │ └── [[slug]].js # 文章详情页（基于 slug 路由）
+│ │ └── 功能：显示文章完整内容、阅读量统计、相关文章推荐、目录生成
+│ │
+│ └── api/ # API 接口目录
+│ │
+│ ├── blog.js # 文章集合 API
+│ │ └── 功能：GET /api/blog（获取文章列表）、POST /api/blog（发布文章）
+│ │
+│ ├── blog/ # 单篇文章 API 目录
+│ │ └── [[id]].js # 单篇文章操作 API
+│ │ └── 功能：GET /api/blog/:id（获取单篇文章）、
+│ │ PUT /api/blog/:id（更新文章）、
+│ │ DELETE /api/blog/:id（删除文章）
+│ │
+│ ├── config.js # 书签集合 API
+│ │ └── 功能：GET /api/config（获取书签列表）、POST /api/config（添加书签）
+│ │
+│ ├── config/ # 单个书签 API 目录
+│ │ └── [id].js # 单本书签操作 API
+│ │ └── 功能：PUT /api/config/:id（更新书签）、DELETE /api/config/:id（删除书签）
+│ │
+│ ├── change-password.js # 修改密码 API
+│ │ └── 功能：POST /api/change-password（验证原密码并更新新密码）
+│ │
+│ ├── header-bg.js # 页眉背景图 API
+│ │ └── 功能：GET /api/header-bg（获取背景图 URL）、
+│ │ POST /api/header-bg（保存背景图 URL）
+│ │
+│ ├── image/ # 图片访问目录
+│ │ └── [filename].js # 图片获取 API
+│ │ └── 功能：GET /api/image/:filename（从 KV 读取图片并返回）
+│ │
+│ ├── logo.js # Logo API
+│ │ └── 功能：GET /api/logo（获取 Logo URL）、POST /api/logo（保存 Logo URL）
+│ │
+│ ├── logo-link.js # Logo 跳转链接 API
+│ │ └── 功能：GET /api/logo-link（获取跳转链接）、
+│ │ POST /api/logo-link（保存跳转链接）
+│ │
+│ ├── search.js # 文章搜索 API
+│ │ └── 功能：GET /api/search?q=关键词（全文搜索已发布文章）
+│ │
+│ ├── site-info.js # 站点信息 API
+│ │ └── 功能：GET /api/site-info（获取站点标题/副标题/国内线路链接）、
+│ │ POST /api/site-info（保存站点信息）
+│ │
+│ ├── sitemap.js # 站点地图 API
+│ │ └── 功能：GET /api/sitemap（自动生成 XML 格式站点地图）
+│ │
+│ ├── stats.js # 统计信息 API
+│ │ └── 功能：GET /api/stats（返回文章数、总阅读量、标签/分类分布）
+│ │
+│ └── upload.js # 图片上传 API
+│ └── 功能：POST /api/upload（上传图片到 KV，返回图片 URL）
+│
+├── _routes.json # 路由规则配置文件
+│ └── 功能：定义哪些路径走云函数，哪些路径排除
+│
+└── README.md # 项目说明文档（本文件）
+
+
+---
+
+## 📊 文件统计
+
+| 目录 | 文件数 | 说明 |
+|------|--------|------|
+| `.edgeone/` | 1 | 路由配置 |
+| `functions/` 根目录 | 5 | 主入口、中间件、后台、登出 |
+| `functions/post/` | 1 | 文章详情页 |
+| `functions/api/` 根目录 | 11 | 各类 API 接口 |
+| `functions/api/blog/` | 1 | 单篇文章 API |
+| `functions/api/config/` | 1 | 单个书签 API |
+| `functions/api/image/` | 1 | 图片访问 API |
+| 根目录配置文件 | 2 | 路由规则、说明文档 |
+| **合计** | **23** | |
+
+---
+
+## 🚀 部署步骤
+
+### 第一步：创建 KV 命名空间
+
+1. 登录 [腾讯云 EdgeOne Pages 控制台](https://console.cloud.tencent.com/edgeone/pages)
+2. 左侧菜单点击 **"KV 存储"**
+3. 点击 **"新建命名空间"**
+4. 名称填写：`myblog`（或其他任意名称）
+5. 点击 **"创建"**
+
+### 第二步：创建 Pages 项目
+
+1. 进入 **Pages** → **创建项目**
+2. 选择 **"连接 Git"** 或 **"直接上传"**
+3. 如果使用 Git，关联你的 GitHub 仓库，选择 `master` 分支
+4. **构建命令**：留空
+5. **输出目录**：留空
+6. 点击 **"创建"** 或 **"保存并部署"**
+
+### 第三步：绑定 KV 命名空间
+
+1. 进入项目 → **"KV 存储"** → **"绑定命名空间"**
+2. **变量名**：`NAV_KV`（必须大写）
+3. **命名空间**：选择第一步创建的 `myblog`
+4. 点击 **"保存"**
+
+### 第四步：等待部署
+
+部署约需 1-2 分钟，完成后会获得一个 `https://项目名.edgeone.app` 域名。
+
+### 第五步：首次登录
+
+1. 访问 `https://项目名.edgeone.app/admin`
+2. 输入用户名：`admin`，密码：`admin123`
+3. 登录后立即修改密码
+
+---
+
+## ✨ 功能列表
+
+### 首页（`/`）
+
+| 区域 | 功能 |
+|------|------|
+| 顶部 | 站点标题、副标题、日期、国内线路按钮 |
+| 左侧侧边栏 | 博客列表入口、书签分类（带数量）、热门文章（带阅读量）、后台入口 |
+| 主内容区 | 博客/书签 Tab 切换 |
+| 博客 Tab | 搜索框、标签云、文章卡片 |
+| 书签 Tab | 书签卡片网格 |
+| 右下角 | 暗色模式切换、返回顶部按钮 |
+
+### 后台管理（`/admin`）
+
+| 模块 | 功能 |
+|------|------|
+| 文章管理 | 发布、编辑、删除文章；支持标题、分类、状态、封面图、摘要、内容、标签、置顶 |
+| 书签管理 | 添加、编辑、删除书签；支持名称、网址、分类、排序、Logo、描述 |
+| 站点设置 | 站点标题、副标题、国内线路链接 |
+| Logo 设置 | Logo URL、Logo 跳转链接、页眉背景图 |
+| 安全 | 修改管理员密码 |
+
+### API 接口（`/api/*`）
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/config` | GET | 获取书签列表 |
+| `/api/config` | POST | 添加书签 |
+| `/api/config/:id` | PUT | 更新书签 |
+| `/api/config/:id` | DELETE | 删除书签 |
+| `/api/blog` | GET | 获取文章列表 |
+| `/api/blog` | POST | 发布文章 |
+| `/api/blog/:id` | GET | 获取单篇文章 |
+| `/api/blog/:id` | PUT | 更新文章 |
+| `/api/blog/:id` | DELETE | 删除文章 |
+| `/api/site-info` | GET | 获取站点信息 |
+| `/api/site-info` | POST | 保存站点信息 |
+| `/api/change-password` | POST | 修改密码 |
+| `/api/upload` | POST | 上传图片 |
+| `/api/image/:filename` | GET | 获取图片 |
+| `/api/search` | GET | 搜索文章 |
+| `/api/sitemap` | GET | 站点地图 |
+| `/api/stats` | GET | 统计信息 |
+
+---
+
+## 🔧 配置说明
+
+### KV 绑定
+
+| 绑定名 | 类型 | 说明 |
+|--------|------|------|
+| `NAV_KV` | KV 命名空间 | 存储所有数据（必需） |
+
+### 默认管理员密码
+
+- 用户名：`admin`（固定）
+- 密码：`admin123`（首次登录后请修改）
+
+### KV 数据结构（自动创建）
+
+| Key | 类型 | 说明 |
+|-----|------|------|
+| `sites` | JSON Array | 书签列表 |
+| `blog_posts` | JSON Array | 文章列表 |
+| `admin_password` | String | 管理员密码 |
+| `site_title` | String | 站点标题 |
+| `site_subtitle` | String | 站点副标题 |
+| `site_logo` | String | Logo URL |
+| `site_logo_link` | String | Logo 跳转链接 |
+| `header_bg` | String | 页眉背景图 |
+| `cn_link` | String | 国内线路链接 |
+| `views:文章ID` | String | 文章阅读量 |
+| `img:文件名` | String | 上传的图片（Base64） |
+| `session:token` | String | 登录会话 |
+
+---
+
+## 🔄 部署流程图
+创建 KV 命名空间
+↓
+
+创建 Pages 项目（关联 Git 仓库）
+↓
+
+绑定 KV（变量名: NAV_KV）
+↓
+
+等待自动部署（约 1-2 分钟）
+↓
+
+访问 /admin 登录（admin / admin123）
+↓
+
+修改密码，开始使用
+
+---
+
+## 📝 注意事项
+
+1. **KV 绑定名必须是 `NAV_KV`**，区分大小写
+2. 构建命令和输出目录**必须留空**
+3. 图片上传限制 5MB，自动存入 KV
+4. 书签排序：数字越小越靠前
+5. 置顶文章会显示在列表最前面
+6. 国内线路按钮：只有在后台填写了链接才会显示
+7. 文章 slug 自动从标题生成，重复时会自动添加后缀
+
+---
+
+## ❓ 常见问题
+
+### Q: 部署后访问出现 404？
+A: 检查 `.edgeone/functions.json` 和 `_routes.json` 文件是否存在，且内容正确。
+
+### Q: 首页显示"暂无文章"？
+A: 需要先在后台发布文章，并确保状态为"发布"。
+
+### Q: 图片上传失败？
+A: 检查图片大小是否超过 5MB，或格式是否为图片格式（支持 jpg、png、gif、webp）。
+
+### Q: 富文本编辑器不显示？
+A: 检查网络是否能访问 CDN，或更换其他 CDN 源。
+
+### Q: 忘记管理员密码？
+A: 在 EdgeOne KV 控制台直接修改 `admin_password` 的值。
+
+### Q: 如何绑定自定义域名？
+A: Pages 项目 → **"域名管理"** → **"添加域名"**，按提示添加 CNAME 记录。
+
+### Q: 国内线路按钮不显示？
+A: 需要在后台 **站点设置** 中填写国内线路链接才会显示。
+
+### Q: 置顶功能不生效？
+A: 发布文章时勾选"置顶文章"，首页置顶文章会显示📌标识并排在列表最前面。
+
+---
+
+## 📄 许可证
+
+MIT License
