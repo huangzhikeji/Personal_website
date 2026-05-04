@@ -316,7 +316,7 @@ document.getElementById('headerBgFileInput').onchange = async (e) => {
     if (!f) return;
     const fd = new FormData();
     fd.append('image', f);
-    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
     const d = await r.json();
     if (d.code === 200) {
         document.getElementById('headerBgInput').value = d.url;
@@ -352,7 +352,7 @@ document.getElementById('logoFileInput').onchange = async (e) => {
     if (!f) return;
     const fd = new FormData();
     fd.append('image', f);
-    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
     const d = await r.json();
     if (d.code === 200) {
         document.getElementById('logoInput').value = d.url;
@@ -580,7 +580,7 @@ function initQuill() {
         if (!f) return;
         const fd = new FormData();
         fd.append('image', f);
-        const r = await fetch('/api/upload', { method: 'POST', body: fd });
+        const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
         const d = await r.json();
         if (d.code === 200) {
             const range = quill.getSelection(true);
@@ -610,7 +610,7 @@ function renderBlogList() {
         return b.id - a.id;
     });
     if (!fl.length) { document.getElementById('blogList').innerHTML = '<p style="color:#a0aec0;padding:20px 0">暂无文章</p>'; return; }
-    let h = '<table><thead><tr><th>ID</th><th>标题</th><th>分类</th><th>状态</th><th>日期</th><th>操作</th></tr></thead><tbody>';
+    let h = '<tr><thead><tr><th>ID</th><th>标题</th><th>分类</th><th>状态</th><th>日期</th><th>操作</th></tr></thead><tbody>';
     fl.forEach(p => {
         const badge = p.status === 'published'
             ? '<span class="status-badge status-published">已发布</span>'
