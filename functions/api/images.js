@@ -1,9 +1,10 @@
 // 完整的 KV 图片管理工具 - 包含上传、列表、删除功能
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
+    const pathname = url.pathname;
     
     // ========== 处理图片上传 ==========
-    if (request.method === 'POST' && url.pathname === '/api/images') {
+    if (request.method === 'POST' && pathname === '/api/images') {
         try {
             const formData = await request.formData();
             const file = formData.get('image');
@@ -46,8 +47,29 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // ========== 获取图片列表 ==========
-    if (request.method === 'GET' && !url.searchParams.get('action')) {
+    // ========== 删除图片 ==========
+    if (request.method === 'DELETE' && pathname === '/api/images') {
+        try {
+            const body = await request.json();
+            const filename = body.filename;
+            if (!filename) {
+                return new Response(JSON.stringify({ code: 400, message: '缺少文件名' }), {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+            }
+            await NAV_KV.delete(`img:${filename}`);
+            return new Response(JSON.stringify({ code: 200, message: '删除成功' }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (e) {
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // ========== 获取图片列表 (API 请求，带 ?json 参数) ==========
+    if (request.method === 'GET' && url.searchParams.get('json') === '1') {
         try {
             const keys = await NAV_KV.list({ prefix: 'img:' });
             const images = [];
@@ -79,28 +101,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // ========== 删除图片 ==========
-    if (request.method === 'DELETE') {
-        try {
-            const body = await request.json();
-            const filename = body.filename;
-            if (!filename) {
-                return new Response(JSON.stringify({ code: 400, message: '缺少文件名' }), {
-                    headers: { 'Content-Type': 'application/json' }
-                });
-            }
-            await NAV_KV.delete(`img:${filename}`);
-            return new Response(JSON.stringify({ code: 200, message: '删除成功' }), {
-                headers: { 'Content-Type': 'application/json' }
-            });
-        } catch (e) {
-            return new Response(JSON.stringify({ code: 500, message: e.message }), {
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-    }
-    
-    // ========== 返回管理页面 ==========
+    // ========== 返回管理页面 (默认) ==========
     return new Response(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -161,7 +162,7 @@ async function loadImages() {
     container.innerHTML = '<div class="loading">⏳ 加载中...</div>';
     
     try {
-        const res = await fetch(API_URL);
+        const res = await fetch(API_URL + '?json=1');
         const data = await res.json();
         
         if (data.code === 200) {
@@ -197,7 +198,7 @@ async function loadImages() {
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async () => {
-                    if (!confirm('确定删除这张图片吗？\n\n⚠️ 删除后文章中使用的图片将无法显示！')) return;
+                    if (!confirm('确定删除这张图片吗？\\n\\n⚠️ 删除后文章中使用的图片将无法显示！')) return;
                     const res = await fetch(API_URL, {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
