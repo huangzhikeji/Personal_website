@@ -243,6 +243,21 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
+<!-- 图片管理卡片 -->
+<div class="card">
+    <div class="card-title">🖼️ 图片管理</div>
+    <div id="imageManageBlock">
+        <div style="margin-bottom:15px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+            <button id="refreshImageListBtn" class="btn-primary">🔄 刷新图片列表</button>
+            <span id="imageStats" style="font-size:13px; color:#718096;"></span>
+            <span style="font-size:13px; color:#718096;">💡 复制链接后粘贴到文章「封面图 URL」</span>
+        </div>
+        <div id="imageListGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 15px; max-height: 400px; overflow-y: auto; padding: 5px;">
+            <div style="padding:40px; text-align:center; color:#999;">加载中...</div>
+        </div>
+    </div>
+</div>
+
 <!-- 文章编辑弹窗 -->
 <div id="postModal" class="modal">
     <div class="blog-modal-content">
@@ -253,7 +268,7 @@ export async function onRequest({ request, env }) {
             <div class="form-group"><label>分类</label><input type="text" id="postCategory" placeholder="未分类"></div>
             <div class="form-group"><label>状态</label><select id="postStatus"><option value="published">发布</option><option value="draft">草稿</option></select></div>
         </div>
-        <div class="form-group"><label>封面图 URL</label><input type="url" id="postCoverImage" placeholder="https://..."></div>
+        <div class="form-group"><label>封面图 URL</label><input type="url" id="postCoverImage" placeholder="https://... 或 /api/image/xxx.jpg"></div>
         <div class="form-group"><label>摘要</label><textarea id="postExcerpt" rows="2" placeholder="可选"></textarea></div>
         <div class="form-group"><label>内容 *</label></div>
         <div id="quill-editor-wrap"><div id="quill-editor"></div></div>
@@ -812,6 +827,93 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
         setTimeout(() => { status.textContent = ''; }, 3000);
     }
 });
+
+// ========== 图片管理 ==========
+async function refreshImageList() {
+    const container = document.getElementById('imageListGrid');
+    const stats = document.getElementById('imageStats');
+    if (!container) return;
+    
+    container.innerHTML = '<div style="padding:40px; text-align:center;">加载中...</div>';
+    if (stats) stats.textContent = '';
+    
+    try {
+        const res = await fetch('/api/get-images', { credentials: 'include' });
+        const data = await res.json();
+        
+        if (data.code === 200 && data.data.length > 0) {
+            if (stats) stats.textContent = `📸 共 ${data.total} 张图片`;
+            
+            let html = '';
+            for (const img of data.data) {
+                const displayName = img.filename.length > 25 ? img.filename.substring(0, 22) + '...' : img.filename;
+                html += `
+                    <div style="background:#f8fafc; border-radius:10px; padding:12px; border:1px solid #e2e8f0;">
+                        <img src="${escapeHtml(img.url)}" style="width:100%; height:120px; object-fit:cover; border-radius:8px; margin-bottom:10px; background:#f0f0f0;" 
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E❌%3C/text%3E%3C/svg%3E'">
+                        <div style="font-size:10px; color:#666; word-break:break-all; margin-bottom:8px;" title="${escapeHtml(img.filename)}">📄 ${escapeHtml(displayName)}</div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="copy-img-link" data-url="${escapeHtml(img.url)}" style="flex:1; background:#667eea; color:white; border:none; padding:6px; border-radius:6px; cursor:pointer; font-size:11px;">📋 复制链接</button>
+                            <button class="delete-img-btn" data-filename="${escapeHtml(img.filename)}" style="background:#e53e3e; color:white; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:11px;">🗑️ 删除</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+            
+            document.querySelectorAll('.copy-img-link').forEach(btn => {
+                btn.onclick = async () => {
+                    const url = btn.dataset.url;
+                    await navigator.clipboard.writeText(url);
+                    const original = btn.textContent;
+                    btn.textContent = '✓ 已复制';
+                    setTimeout(() => btn.textContent = original, 1500);
+                };
+            });
+            
+            document.querySelectorAll('.delete-img-btn').forEach(btn => {
+                btn.onclick = async () => {
+                    const filename = btn.dataset.filename;
+                    if (!confirm(`确定删除图片 "${filename}" 吗？\\n\\n⚠️ 删除后文章中使用的图片将无法显示！`)) return;
+                    
+                    const res = await fetch('/api/delete-image', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ filename }),
+                        credentials: 'include'
+                    });
+                    const result = await res.json();
+                    if (result.code === 200) {
+                        showMessage('✅ 删除成功', 'success');
+                        refreshImageList();
+                    } else {
+                        showMessage('❌ 删除失败: ' + (result.message || '未知错误'), 'error');
+                    }
+                };
+            });
+        } else if (data.code === 200 && data.data.length === 0) {
+            container.innerHTML = '<div style="padding:40px; text-align:center; color:#999;">📭 暂无图片，请在写文章时上传图片</div>';
+            if (stats) stats.textContent = '📸 共 0 张图片';
+        } else if (data.code === 401) {
+            container.innerHTML = '<div style="padding:40px; text-align:center; color:#e53e3e;">🔐 请先登录后台</div>';
+        } else {
+            container.innerHTML = '<div style="padding:40px; text-align:center; color:#e53e3e;">❌ ' + (data.message || '加载失败') + '</div>';
+        }
+    } catch (e) {
+        container.innerHTML = '<div style="padding:40px; text-align:center; color:#e53e3e;">❌ 加载失败: ' + e.message + '</div>';
+    }
+}
+
+const refreshBtn = document.getElementById('refreshImageListBtn');
+if (refreshBtn) {
+    refreshBtn.onclick = refreshImageList;
+}
+
+setTimeout(() => {
+    if (document.getElementById('imageListGrid')) {
+        refreshImageList();
+    }
+}, 500);
 
 // 初始化加载
 loadLogo();
