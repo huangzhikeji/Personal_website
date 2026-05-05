@@ -24,25 +24,31 @@ export async function onRequest({ request, env }) {
             const keys = await NAV_KV.list({ prefix: 'img:' });
             const images = [];
             
-            if (keys && keys.keys) {
+            // 检查 keys 和 keys.keys 是否存在
+            if (keys && keys.keys && Array.isArray(keys.keys)) {
                 for (const key of keys.keys) {
-                    let filename = key.name;
-                    if (filename.startsWith('img:')) {
-                        filename = filename.substring(4);
+                    // 检查 key 和 key.name 是否存在
+                    if (key && key.name) {
+                        let filename = key.name;
+                        if (filename.startsWith('img:')) {
+                            filename = filename.substring(4);
+                        }
+                        images.push({
+                            filename: filename,
+                            url: `/api/image/${filename}`
+                        });
                     }
-                    images.push({
-                        filename: filename,
-                        url: `/api/image/${filename}`
-                    });
                 }
             }
             
+            // 按文件名倒序（最新的在前）
             images.sort((a, b) => b.filename.localeCompare(a.filename));
             
             return new Response(JSON.stringify({ code: 200, data: images, total: images.length }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
+            console.error('获取图片列表错误:', e);
             return new Response(JSON.stringify({ code: 500, message: '获取图片列表失败: ' + e.message }), {
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -68,6 +74,7 @@ export async function onRequest({ request, env }) {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
+            console.error('删除图片错误:', e);
             return new Response(JSON.stringify({ code: 500, message: '删除失败: ' + e.message }), {
                 headers: { 'Content-Type': 'application/json' }
             });
