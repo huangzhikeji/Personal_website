@@ -1,8 +1,8 @@
-// functions/api/images.js - 带清空所有KV数据功能
+// functions/api/images.js - 无大小限制版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
-    // 上传图片
+    // 上传图片（无大小限制）
     if (request.method === 'POST') {
         try {
             const formData = await request.formData();
@@ -13,6 +13,8 @@ export async function onRequest({ request, env }) {
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
+            
+            // 已移除文件大小限制，允许上传任意大小图片
             
             const bytes = new Uint8Array(await file.arrayBuffer());
             let binary = '';
@@ -94,12 +96,10 @@ export async function onRequest({ request, env }) {
     // 清空KV所有数据（危险操作）
     if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
         try {
-            // 获取所有以特定前缀开头的keys
             const prefixes = ['img:', 'blog_posts', 'sites', 'views:', 'session:', 'site_title', 'site_subtitle', 'site_logo', 'site_logo_link', 'header_bg', 'cn_link', 'image_urls', 'admin_username', 'admin_password'];
             
             for (const prefix of prefixes) {
                 if (prefix.includes(':')) {
-                    // 需要 list 扫描的前缀
                     const keys = await NAV_KV.list({ prefix: prefix });
                     if (keys && keys.keys) {
                         for (const key of keys.keys) {
@@ -107,7 +107,6 @@ export async function onRequest({ request, env }) {
                         }
                     }
                 } else {
-                    // 直接删除单个key
                     const value = await NAV_KV.get(prefix);
                     if (value !== null) {
                         await NAV_KV.delete(prefix);
@@ -321,10 +320,10 @@ document.getElementById('fileInput').onchange = async function(e) {
             alert('上传成功');
             loadImages();
         } else {
-            alert('上传失败');
+            alert('上传失败: ' + (data.message || '未知错误'));
         }
     } catch(err) {
-        alert('上传失败');
+        alert('上传失败: ' + err.message);
     } finally {
         btn.textContent = '上传图片';
         btn.disabled = false;
