@@ -1,4 +1,4 @@
-// functions/api/images.js - 稳定版
+// functions/api/images.js - 带清空所有KV数据功能
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -24,10 +24,8 @@ export async function onRequest({ request, env }) {
             const ext = file.type.split('/')[1] || 'jpg';
             const filename = Date.now() + '.' + ext;
             
-            // 保存图片到 KV
             await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
             
-            // 更新图片列表
             let imageList = [];
             const existingList = await NAV_KV.get('image_urls');
             if (existingList) {
@@ -46,8 +44,8 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 删除图片
-    if (request.method === 'DELETE') {
+    // 删除单张图片
+    if (request.method === 'DELETE' && url.searchParams.get('all') !== '1' && url.searchParams.get('clear') !== '1') {
         try {
             const body = await request.json();
             const filename = body.filename;
@@ -62,6 +60,62 @@ export async function onRequest({ request, env }) {
             }
             
             return new Response(JSON.stringify({ code: 200 }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (e) {
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 清空所有图片（只删除图片文件和列表）
+    if (request.method === 'DELETE' && url.searchParams.get('all') === '1') {
+        try {
+            const existingList = await NAV_KV.get('image_urls');
+            if (existingList) {
+                const imageList = JSON.parse(existingList);
+                for (const img of imageList) {
+                    await NAV_KV.delete('img:' + img.filename);
+                }
+            }
+            await NAV_KV.put('image_urls', JSON.stringify([]));
+            
+            return new Response(JSON.stringify({ code: 200, message: '已清空所有图片' }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        } catch (e) {
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 清空KV所有数据（危险操作）
+    if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
+        try {
+            // 获取所有以特定前缀开头的keys
+            const prefixes = ['img:', 'blog_posts', 'sites', 'views:', 'session:', 'site_title', 'site_subtitle', 'site_logo', 'site_logo_link', 'header_bg', 'cn_link', 'image_urls', 'admin_username', 'admin_password'];
+            
+            for (const prefix of prefixes) {
+                if (prefix.includes(':')) {
+                    // 需要 list 扫描的前缀
+                    const keys = await NAV_KV.list({ prefix: prefix });
+                    if (keys && keys.keys) {
+                        for (const key of keys.keys) {
+                            await NAV_KV.delete(key.name);
+                        }
+                    }
+                } else {
+                    // 直接删除单个key
+                    const value = await NAV_KV.get(prefix);
+                    if (value !== null) {
+                        await NAV_KV.delete(prefix);
+                    }
+                }
+            }
+            
+            return new Response(JSON.stringify({ code: 200, message: '已清空所有KV数据' }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
@@ -95,9 +149,11 @@ export async function onRequest({ request, env }) {
     <style>
         body{font-family:system-ui;padding:20px;background:#f0f2f5}
         .container{max-width:1000px;margin:0 auto}
-        .card{background:white;border-radius:12px;padding:20px}
-        button{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
+        .card{background:white;border-radius:12px;padding:20px;margin-bottom:20px}
+        button{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px}
         .btn-green{background:#38a169}
+        .btn-red{background:#e53e3e}
+        .btn-orange{background:#ed8936}
         .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px;margin-top:20px}
         .image-card{background:#f8fafc;border-radius:8px;padding:10px;border:1px solid #ddd}
         .image-card img{width:100%;height:100px;object-fit:cover;border-radius:6px}
@@ -105,17 +161,28 @@ export async function onRequest({ request, env }) {
         button.small{padding:4px 8px;font-size:11px;margin:2px}
         .delete-btn{background:#e53e3e}
         .loading{text-align:center;padding:40px;color:#999}
+        .danger-zone{background:#fff5f5;border:1px solid #feb2b2;border-radius:8px;padding:15px;margin-top:20px}
+        .danger-zone h3{color:#c53030;margin-bottom:10px}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="card">
-        <h2>图片管理</h2>
-        <button id="uploadBtn" class="btn-green">上传图片</button>
-        <button id="refreshBtn">刷新列表</button>
-        <span id="stats" style="margin-left:10px"></span>
+        <h2>🖼️ 图片管理</h2>
+        <div style="margin-bottom:15px">
+            <button id="uploadBtn" class="btn-green">📤 上传图片</button>
+            <button id="refreshBtn">🔄 刷新列表</button>
+            <button id="clearImagesBtn" class="btn-orange">🗑️ 清空所有图片</button>
+            <span id="stats" style="margin-left:10px"></span>
+        </div>
         <input type="file" id="fileInput" accept="image/*" style="display:none">
         <div id="imageList" class="image-grid"><div class="loading">加载中...</div></div>
+    </div>
+    
+    <div class="danger-zone">
+        <h3>⚠️ 危险操作区</h3>
+        <p style="font-size:13px; margin-bottom:10px">清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
+        <button id="clearAllDataBtn" class="btn-red">💀 清空所有KV数据</button>
     </div>
 </div>
 <script>
@@ -154,7 +221,7 @@ async function loadImages() {
             var delBtns = document.querySelectorAll('.delete-btn');
             for (var k = 0; k < delBtns.length; k++) {
                 delBtns[k].onclick = async function() {
-                    if (!confirm('确定删除？')) return;
+                    if (!confirm('确定删除这张图片？')) return;
                     var res = await fetch('/api/images', {
                         method: 'DELETE',
                         body: JSON.stringify({ filename: this.dataset.filename }),
@@ -177,6 +244,64 @@ async function loadImages() {
         container.innerHTML = '<div class="loading">加载失败: ' + e.message + '</div>';
     }
 }
+
+// 清空所有图片（保留文章/书签等）
+document.getElementById('clearImagesBtn').onclick = async function() {
+    if (!confirm('⚠️ 警告：这将删除 KV 中所有图片文件！\\n\\n删除后文章中的图片将无法显示，但文章文字内容不受影响。\\n\\n确定要继续吗？')) return;
+    
+    var btn = this;
+    btn.textContent = '清空中...';
+    btn.disabled = true;
+    
+    try {
+        var res = await fetch('/api/images?all=1', { method: 'DELETE' });
+        var data = await res.json();
+        if (data.code === 200) {
+            alert('清空成功！所有图片已删除');
+            loadImages();
+        } else {
+            alert('清空失败: ' + data.message);
+        }
+    } catch(err) {
+        alert('清空失败: ' + err.message);
+    } finally {
+        btn.textContent = '清空所有图片';
+        btn.disabled = false;
+    }
+};
+
+// 清空所有KV数据（危险操作）
+document.getElementById('clearAllDataBtn').onclick = async function() {
+    if (!confirm('💀 最终确认：这将删除 KV 存储中的所有数据！\\n\\n包括：\\n- 所有文章\\n- 所有书签\\n- 所有图片\\n- 站点设置\\n- 管理员密码\\n\\n此操作不可恢复！\\n\\n输入 "确认删除" 以继续')) {
+        return;
+    }
+    
+    var userInput = prompt('请输入 "确认删除" 来确认此操作：');
+    if (userInput !== '确认删除') {
+        alert('操作已取消');
+        return;
+    }
+    
+    var btn = this;
+    btn.textContent = '清空中...';
+    btn.disabled = true;
+    
+    try {
+        var res = await fetch('/api/images?clear=1', { method: 'DELETE' });
+        var data = await res.json();
+        if (data.code === 200) {
+            alert('清空成功！所有KV数据已删除');
+            loadImages();
+        } else {
+            alert('清空失败: ' + data.message);
+        }
+    } catch(err) {
+        alert('清空失败: ' + err.message);
+    } finally {
+        btn.textContent = '清空所有KV数据';
+        btn.disabled = false;
+    }
+};
 
 document.getElementById('uploadBtn').onclick = function() {
     document.getElementById('fileInput').click();
