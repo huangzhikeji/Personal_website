@@ -1,4 +1,4 @@
-// functions/api/images.js - 完整可用版
+// functions/api/images.js - 完整可用版（已修复语法错误）
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -99,13 +99,13 @@ export async function onRequest({ request, env }) {
 <body>
 <div class="container">
     <div class="header">
-        <h1>🖼️ KV 图片管理</h1>
+        <h1>KV 图片管理</h1>
     </div>
     <div class="card">
-        <div class="info">📤 点击上传图片 | 📋 复制链接用于文章封面 | 🗑️ 删除图片</div>
+        <div class="info">上传图片 | 复制链接用于文章封面 | 删除图片</div>
         <div>
-            <button class="btn" id="refreshBtn">🔄 刷新</button>
-            <button class="btn btn-green" id="uploadBtn">📤 上传图片</button>
+            <button class="btn" id="refreshBtn">刷新</button>
+            <button class="btn btn-green" id="uploadBtn">上传图片</button>
             <span id="stats" class="stats"></span>
         </div>
         <input type="file" id="fileInput" accept="image/*" style="display:none">
@@ -114,60 +114,73 @@ export async function onRequest({ request, env }) {
 </div>
 <script>
 async function loadImages() {
-    const container = document.getElementById('imageList');
-    const statsDiv = document.getElementById('stats');
+    var container = document.getElementById('imageList');
+    var statsDiv = document.getElementById('stats');
     container.innerHTML = '<div class="loading">加载中...</div>';
     
     try {
-        const keys = await NAV_KV.list({ prefix: 'img:' });
-        const images = [];
+        var keys = await NAV_KV.list({ prefix: 'img:' });
+        var images = [];
         if (keys && keys.keys) {
-            for (const key of keys.keys) {
-                let filename = key.name;
-                if (filename.startsWith('img:')) filename = filename.substring(4);
-                images.push({ filename, url: '/api/image/' + filename });
+            for (var i = 0; i < keys.keys.length; i++) {
+                var key = keys.keys[i];
+                var filename = key.name;
+                if (filename.startsWith('img:')) {
+                    filename = filename.substring(4);
+                }
+                images.push({ filename: filename, url: '/api/image/' + filename });
             }
         }
-        images.sort((a, b) => b.filename.localeCompare(a.filename));
+        images.sort(function(a, b) {
+            if (a.filename > b.filename) return -1;
+            if (a.filename < b.filename) return 1;
+            return 0;
+        });
         
         statsDiv.innerText = images.length === 0 ? '' : '共 ' + images.length + ' 张';
         
         if (images.length === 0) {
-            container.innerHTML = '<div class="loading">📭 暂无图片，点击「上传图片」添加</div>';
+            container.innerHTML = '<div class="loading">暂无图片，点击「上传图片」添加</div>';
             return;
         }
         
-        let html = '';
-        for (const img of images) {
-            const displayName = img.filename.length > 28 ? img.filename.substring(0, 25) + '...' : img.filename;
+        var html = '';
+        for (var j = 0; j < images.length; j++) {
+            var img = images[j];
+            var displayName = img.filename.length > 28 ? img.filename.substring(0, 25) + '...' : img.filename;
             html += '<div class="image-card">' +
                 '<img src="' + img.url + '" onerror="this.style.display=\'none\'">' +
-                '<div class="filename" title="' + img.filename + '">📄 ' + displayName + '</div>' +
+                '<div class="filename" title="' + img.filename + '"> ' + displayName + '</div>' +
                 '<div class="actions">' +
-                    '<button class="copy-btn" data-url="' + img.url + '">📋 复制</button>' +
-                    '<button class="delete-btn" data-filename="' + img.filename + '">🗑️ 删除</button>' +
+                    '<button class="copy-btn" data-url="' + img.url + '">复制</button>' +
+                    '<button class="delete-btn" data-filename="' + img.filename + '">删除</button>' +
                 '</div>' +
             '</div>';
         }
         container.innerHTML = html;
         
-        document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.onclick = () => {
-                navigator.clipboard.writeText(btn.dataset.url);
-                btn.textContent = '✓ 已复制';
-                setTimeout(() => btn.textContent = '📋 复制', 1500);
+        var copyBtns = document.querySelectorAll('.copy-btn');
+        for (var k = 0; k < copyBtns.length; k++) {
+            copyBtns[k].onclick = function() {
+                var url = this.dataset.url;
+                navigator.clipboard.writeText(url);
+                this.textContent = '已复制';
+                var self = this;
+                setTimeout(function() { self.textContent = '复制'; }, 1500);
             };
-        });
+        }
         
-        document.querySelectorAll('.delete-btn').forEach(btn => {
-            btn.onclick = async () => {
+        var deleteBtns = document.querySelectorAll('.delete-btn');
+        for (var m = 0; m < deleteBtns.length; m++) {
+            deleteBtns[m].onclick = async function() {
+                var filename = this.dataset.filename;
                 if (!confirm('确定删除这张图片？')) return;
-                const res = await fetch('/api/images', {
+                var res = await fetch('/api/images', {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: btn.dataset.filename })
+                    body: JSON.stringify({ filename: filename })
                 });
-                const result = await res.json();
+                var result = await res.json();
                 if (result.code === 200) {
                     alert('删除成功');
                     loadImages();
@@ -175,25 +188,27 @@ async function loadImages() {
                     alert('删除失败');
                 }
             };
-        });
+        }
     } catch (e) {
         container.innerHTML = '<div class="loading">加载失败: ' + e.message + '</div>';
     }
 }
 
 document.getElementById('refreshBtn').onclick = loadImages;
-document.getElementById('uploadBtn').onclick = () => document.getElementById('fileInput').click();
-document.getElementById('fileInput').onchange = async (e) => {
-    const file = e.target.files[0];
+document.getElementById('uploadBtn').onclick = function() {
+    document.getElementById('fileInput').click();
+};
+document.getElementById('fileInput').onchange = async function(e) {
+    var file = e.target.files[0];
     if (!file) return;
-    const formData = new FormData();
+    var formData = new FormData();
     formData.append('image', file);
-    const btn = document.getElementById('uploadBtn');
+    var btn = document.getElementById('uploadBtn');
     btn.textContent = '上传中...';
     btn.disabled = true;
     try {
-        const res = await fetch('/api/images', { method: 'POST', body: formData });
-        const data = await res.json();
+        var res = await fetch('/api/images', { method: 'POST', body: formData });
+        var data = await res.json();
         if (data.code === 200) {
             alert('上传成功');
             loadImages();
@@ -203,7 +218,7 @@ document.getElementById('fileInput').onchange = async (e) => {
     } catch (err) {
         alert('上传失败');
     } finally {
-        btn.textContent = '📤 上传图片';
+        btn.textContent = '上传图片';
         btn.disabled = false;
         e.target.value = '';
     }
