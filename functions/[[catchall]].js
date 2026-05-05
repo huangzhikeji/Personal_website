@@ -1,41 +1,48 @@
+// EdgeOne Pages - 旭儿导航完整版（使用 /img/ 静态文件作为默认Logo和背景图）
 export async function onRequest({ env, request }) {
     const url = new URL(request.url);
     const sites = await getSites(env);
     const posts = await getBlogPosts(env);
-    const logo = await getLogo(env);
+    let logo = await getLogo(env);
     const logoLink = await getLogoLink(env);
-    const headerBg    = await getHeaderBg(env);
-    const siteTitle    = await getSiteTitle(env);
+    let headerBg = await getHeaderBg(env);
+    const siteTitle = await getSiteTitle(env);
     const siteSubtitle = await getSiteSubtitle(env);
+    const cnLink = await getCnLink(env);
+    
+    // 如果没有自定义Logo，使用静态文件
+    if (!logo || logo === '') {
+        logo = '/img/logo.png';
+    }
+    // 如果没有自定义背景图，使用静态文件
+    if (!headerBg || headerBg === '') {
+        headerBg = '/img/bg.jpg';
+    }
     
     const currentTab = url.searchParams.get('tab') || 'blog';
     const searchQuery = url.searchParams.get('q') || '';
     const currentTag = url.searchParams.get('tag') || '';
+    const currentCat = url.searchParams.get('c') || '';
     
-    // 获取阅读量
     const viewsMap = new Map();
     for (const post of posts) {
         const views = await NAV_KV.get(`views:${post.id}`);
         if (views) viewsMap.set(post.id, parseInt(views));
     }
     
-    // 分类统计
     const catMap = new Map();
     sites.forEach(s => {
         const cat = s.catelog || '未分类';
         catMap.set(cat, (catMap.get(cat) || 0) + 1);
     });
     const categories = Array.from(catMap.keys()).sort((a, b) => a.localeCompare(b, 'zh-CN'));
-    const currentCat = url.searchParams.get('c') || '';
     const filteredSites = currentCat ? sites.filter(s => (s.catelog || '未分类') === currentCat) : sites;
     
-    // 侧边栏分类
     let catNavHtml = categories.map(cat => {
         const activeClass = currentCat === cat ? 'background:#667eea;color:white;font-weight:600' : '';
         return `<a href="/?tab=bookmark&c=${encodeURIComponent(cat)}" class="cat-link" style="display:block;padding:10px 12px;margin:4px 0;border-radius:8px;text-decoration:none;color:#4a5568;transition:all 0.2s;${activeClass}">📁 ${escapeHtml(cat)} <span style="float:right;color:#a0aec0;font-size:12px">${catMap.get(cat)}</span></a>`;
     }).join('');
     
-    // 书签卡片
     let cardsHtml = filteredSites.map(s => {
         const name = escapeHtml(s.name || '未命名');
         const url_clean = sanitizeUrl(s.url);
@@ -46,7 +53,6 @@ export async function onRequest({ env, request }) {
         return `<div class="site-card"><a href="${url_clean}" target="_blank" style="text-decoration:none;color:inherit;display:block"><div style="display:flex;align-items:center;margin-bottom:12px">${logo_clean ? `<img src="${logo_clean}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;margin-right:14px">` : `<div style="width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;margin-right:14px">${initial}</div>`}<div style="flex:1"><h3 style="font-size:16px;font-weight:600;color:#2d3748;margin-bottom:4px">${name}</h3><span style="font-size:11px;color:#a0aec0;background:#f7fafc;padding:2px 8px;border-radius:12px">${cat}</span></div></div><p style="font-size:13px;color:#718096;margin-bottom:12px;line-height:1.4">${desc}</p><div style="display:flex;justify-content:space-between"><span style="font-size:11px;color:#a0aec0">${url_clean.replace(/^https?:\/\//, '').substring(0,30)}</span><button class="copy-btn" data-url="${url_clean}" style="background:#edf2f7;border:none;padding:5px 14px;border-radius:20px;font-size:11px;cursor:pointer">复制</button></div></a></div>`;
     }).join('');
     
-    // 博客筛选
     let blogPosts = posts.filter(p => p.status === 'published');
     if (searchQuery) {
         blogPosts = blogPosts.filter(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()) || (p.content && p.content.toLowerCase().includes(searchQuery.toLowerCase())));
@@ -55,7 +61,14 @@ export async function onRequest({ env, request }) {
         blogPosts = blogPosts.filter(p => p.tags && p.tags.some(t => t.toLowerCase() === currentTag.toLowerCase()));
     }
     
-    // 标签云
+    // 确保 pinned 是布尔值，然后排序（置顶文章排前面）
+    blogPosts = blogPosts.map(p => ({ ...p, pinned: p.pinned === true || p.pinned === 'true' }));
+    blogPosts.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    
     const tagMap = new Map();
     blogPosts.forEach(post => {
         if (post.tags) post.tags.forEach(tag => tagMap.set(tag, (tagMap.get(tag) || 0) + 1));
@@ -65,23 +78,26 @@ export async function onRequest({ env, request }) {
         return `<a href="/?tab=blog&tag=${encodeURIComponent(tag)}" style="display:inline-block;margin:4px;padding:4px 12px;background:#f0f0f0;border-radius:20px;text-decoration:none;color:#667eea;font-size:${size}px">${escapeHtml(tag)}(${count})</a>`;
     }).join('');
     
-    // 博客列表
-    let blogListHtml = blogPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).map(post => {
+    let blogListHtml = blogPosts.map(post => {
         const views = viewsMap.get(post.id) || 0;
-        return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || post.content.substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : ''}</div></div>`;
+        const pinnedBadge = post.pinned ? '<span class="pin-badge" style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:12px;font-size:11px;margin-left:8px">📌置顶</span>' : '';
+        return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}${pinnedBadge}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : ''}</div></div>`;
     }).join('');
     if (!blogListHtml) blogListHtml = '<div style="text-align:center;padding:60px">暂无文章</div>';
     
-    // 热门文章
     const hotPosts = [...blogPosts].sort((a, b) => (viewsMap.get(b.id) || 0) - (viewsMap.get(a.id) || 0)).slice(0, 5);
     const hotPostsHtml = hotPosts.map(p => `<a href="/post/${p.slug}" style="display:block;padding:8px 12px;margin:4px 0;border-radius:8px;text-decoration:none;color:#4a5568;font-size:13px;background:#f8fafc">🔥 ${escapeHtml(p.title.length > 18 ? p.title.substring(0,18)+'...' : p.title)} <span style="float:right">${viewsMap.get(p.id) || 0}阅</span></a>`).join('');
     
-    // 最新文章
-    const recentPosts = blogPosts.slice(0, 5);
-    const recentPostsHtml = recentPosts.map(p => `<a href="/post/${p.slug}" style="display:block;padding:8px 12px;margin:4px 0;border-radius:8px;text-decoration:none;color:#4a5568;font-size:13px;background:#f8fafc">📝 ${escapeHtml(p.title.length > 20 ? p.title.substring(0,20)+'...' : p.title)}</a>`).join('');
-    
-    // Logo
-    let logoHtml = logo ? (logoLink ? `<a href="${escapeHtml(logoLink)}" target="_blank"><img src="${escapeHtml(logo)}" style="max-width:200px;max-height:240px"></a>` : `<img src="${escapeHtml(logo)}" style="max-width:200px;max-height:240px">`) : `<div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${escapeHtml(siteTitle || '旭儿导航')}</div>`;
+    let logoHtml = '';
+    if (logo) {
+        if (logoLink) {
+            logoHtml = `<a href="${escapeHtml(logoLink)}" target="_blank"><img src="${escapeHtml(logo)}" style="max-width:200px;max-height:240px"></a>`;
+        } else {
+            logoHtml = `<img src="${escapeHtml(logo)}" style="max-width:200px;max-height:240px">`;
+        }
+    } else {
+        logoHtml = `<div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${escapeHtml(siteTitle || '旭儿导航')}</div>`;
+    }
     
     const title = currentTab === 'blog' ? (searchQuery ? `搜索: ${escapeHtml(searchQuery)}` : '博客文章') : (currentCat ? `${escapeHtml(currentCat)} · ${filteredSites.length}个网站` : `全部收藏 · ${sites.length}个网站`);
     
@@ -99,11 +115,11 @@ export async function onRequest({ env, request }) {
         .sidebar-nav{padding:20px}
         .main{margin-left:280px;min-height:100vh}
         .header{position:relative;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:50px 40px 50px 60px;text-align:left;overflow:hidden}
-        .header-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;display:none}
+        .header-bg-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
         .header-content{position:relative;z-index:2}
-        .header-content h1{color:#d4f5e2;text-shadow:0 2px 12px rgba(0,0,0,0.6),0 0 30px rgba(100,255,180,0.4)}
-        .header-content p,.header-content div{color:#e8d5ff;text-shadow:0 1px 8px rgba(0,0,0,0.5)}
-        .header h1{font-size:42px;margin-bottom:12px}
+        .header h1{font-size:42px;margin-bottom:12px;display:inline-block;margin-right:20px}
+        .cn-btn{display:inline-block;background:rgba(255,255,255,0.2);color:white;padding:8px 20px;border-radius:30px;text-decoration:none;font-size:16px;vertical-align:middle}
+        .cn-btn:hover{background:rgba(255,255,255,0.3)}
         .content{max-width:1300px;margin:0 auto;padding:35px 30px}
         .content-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;flex-wrap:wrap}
         .content-header h2{font-size:22px;color:#2d3748}
@@ -131,6 +147,7 @@ export async function onRequest({ env, request }) {
             .main{margin-left:0}
             .mobile-toggle{display:block}
             .header h1{font-size:28px}
+            .cn-btn{font-size:12px;padding:4px 12px}
         }
     </style>
 </head>
@@ -148,7 +165,7 @@ export async function onRequest({ env, request }) {
         </div>
     </div>
     <div class="main">
-        <div class="header" id="siteHeader">${headerBg ? `<img class="header-bg-img" id="headerBgImg" src="${escapeHtml(headerBg)}" alt="" style="display:block">` : ""}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航')}</h1><p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
+        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">🇨🇳 国内线路</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
         <div class="content">
             <div class="content-header"><h2>${title}</h2><div class="tab-buttons"><button class="tab-btn ${currentTab === 'blog' ? 'active' : ''}" data-tab="blog">📝 博客</button><button class="tab-btn ${currentTab === 'bookmark' ? 'active' : ''}" data-tab="bookmark">🔖 书签</button></div></div>
             <div id="blog-view" style="display:${currentTab === 'blog' ? 'block' : 'none'}">
@@ -165,7 +182,7 @@ export async function onRequest({ env, request }) {
         document.getElementById('mobileToggle').onclick=()=>document.getElementById('sidebar').classList.toggle('open');
         document.querySelectorAll('.copy-btn').forEach(btn=>btn.onclick=e=>{e.preventDefault();navigator.clipboard.writeText(btn.dataset.url);btn.textContent='✓';setTimeout(()=>btn.textContent='复制',1000)});
         document.querySelectorAll('.tab-btn').forEach(btn=>btn.onclick=()=>{let u=new URL(location.href);u.searchParams.set('tab',btn.dataset.tab);u.searchParams.delete('c');u.searchParams.delete('q');location.href=u});
-        document.getElementById('searchForm').onsubmit=e=>{e.preventDefault();let u=new URL(location.href);let q=u.searchParams.get('q');if(q)u.searchParams.set('q',q);location.href=u};
+        document.getElementById('searchForm').onsubmit=e=>{e.preventDefault();let u=new URL(location.href);let q=document.querySelector('#searchForm input').value;if(q)u.searchParams.set('q',q);location.href=u};
         const darkToggle=document.getElementById('darkModeToggle');if(localStorage.getItem('darkMode')==='true')document.body.classList.add('dark');darkToggle.onclick=()=>{document.body.classList.toggle('dark');localStorage.setItem('darkMode',document.body.classList.contains('dark'));darkToggle.textContent=document.body.classList.contains('dark')?'☀️':'🌙'};
         const goTop=document.getElementById('goTop');window.onscroll=()=>goTop.style.display=window.scrollY>300?'block':'none';goTop.onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
     </script>
@@ -173,13 +190,13 @@ export async function onRequest({ env, request }) {
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-async function getSites(env) { try { const d=await NAV_KV.get('sites'); return d?JSON.parse(d):[]; } catch { return []; } }
-async function getBlogPosts(env) { try { const d=await NAV_KV.get('blog_posts'); return d?JSON.parse(d):[]; } catch { return []; } }
-async function getLogo(env) { try { return await NAV_KV.get('site_logo')||''; } catch { return ''; } }
-async function getLogoLink(env) { try { return await NAV_KV.get('site_logo_link')||''; } catch { return ''; } }
-async function getHeaderBg(env) { try { return await NAV_KV.get('header_bg')||''; } catch { return ''; } }
-async function getSiteTitle(env)    { try { return await NAV_KV.get('site_title')    || ''; } catch { return ''; } }
+async function getSites(env) { try { const d = await NAV_KV.get('sites'); return d ? JSON.parse(d) : []; } catch { return []; } }
+async function getBlogPosts(env) { try { const d = await NAV_KV.get('blog_posts'); return d ? JSON.parse(d) : []; } catch { return []; } }
+async function getLogo(env) { try { return await NAV_KV.get('site_logo') || ''; } catch { return ''; } }
+async function getLogoLink(env) { try { return await NAV_KV.get('site_logo_link') || ''; } catch { return ''; } }
+async function getHeaderBg(env) { try { return await NAV_KV.get('header_bg') || ''; } catch { return ''; } }
+async function getSiteTitle(env) { try { return await NAV_KV.get('site_title') || ''; } catch { return ''; } }
 async function getSiteSubtitle(env) { try { return await NAV_KV.get('site_subtitle') || ''; } catch { return ''; } }
+async function getCnLink(env) { try { return await NAV_KV.get('cn_link') || ''; } catch { return ''; } }
 function escapeHtml(s) { if(!s) return ''; return String(s).replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
 function sanitizeUrl(u) { if(!u) return ''; let s=String(u).trim(); if(!s.startsWith('http')) s='https://'+s; return s; }
-
