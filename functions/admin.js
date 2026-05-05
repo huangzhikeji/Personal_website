@@ -316,7 +316,7 @@ document.getElementById('headerBgFileInput').onchange = async (e) => {
     if (!f) return;
     const fd = new FormData();
     fd.append('image', f);
-    const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+    const r = await fetch('/api/upload', { method: 'POST', body: fd });
     const d = await r.json();
     if (d.code === 200) {
         document.getElementById('headerBgInput').value = d.url;
@@ -352,7 +352,7 @@ document.getElementById('logoFileInput').onchange = async (e) => {
     if (!f) return;
     const fd = new FormData();
     fd.append('image', f);
-    const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+    const r = await fetch('/api/upload', { method: 'POST', body: fd });
     const d = await r.json();
     if (d.code === 200) {
         document.getElementById('logoInput').value = d.url;
@@ -580,7 +580,7 @@ function initQuill() {
         if (!f) return;
         const fd = new FormData();
         fd.append('image', f);
-        const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
+        const r = await fetch('/api/upload', { method: 'POST', body: fd });
         const d = await r.json();
         if (d.code === 200) {
             const range = quill.getSelection(true);
@@ -609,42 +609,19 @@ function renderBlogList() {
         if (a.pinned && !b.pinned) return -1;
         return b.id - a.id;
     });
-    if (!fl.length) { 
-        document.getElementById('blogList').innerHTML = '<p style="color:#a0aec0;padding:20px 0">暂无文章</p>'; 
-        return; 
-    }
-    let h = '<table><thead>';
-    h += '<tr><th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">ID</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">标题</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">分类</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">状态</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">日期</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">操作</th></tr>';
-    h += '</thead><tbody>';
-    for (const p of fl) {
+    if (!fl.length) { document.getElementById('blogList').innerHTML = '<p style="color:#a0aec0;padding:20px 0">暂无文章</p>'; return; }
+    let h = '<table><thead><tr><th>ID</th><th>标题</th><th>分类</th><th>状态</th><th>日期</th><th>操作</th></tr></thead><tbody>';
+    fl.forEach(p => {
         const badge = p.status === 'published'
             ? '<span class="status-badge status-published">已发布</span>'
             : '<span class="status-badge status-draft">草稿</span>';
         const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('zh-CN') : '-';
-        h += '<tr>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + p.id + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0"><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge">📌置顶</span>' : '') + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + escapeHtml(p.category || '未分类') + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + badge + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + date + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0" class="actions"><button class="btn-warning blog-edit" data-id="' + p.id + '" style="padding:4px 12px;background:#ed8936;color:white;border:none;border-radius:6px;cursor:pointer;margin-right:8px">编辑</button><button class="btn-danger blog-del" data-id="' + p.id + '" style="padding:4px 12px;background:#e53e3e;color:white;border:none;border-radius:6px;cursor:pointer">删除</button></td>';
-        h += '</tr>';
-    }
+        h += '<tr><td>' + p.id + '</td><td><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge">📌 置顶</span>' : '') + '</td><td>' + escapeHtml(p.category || '未分类') + '</td><td>' + badge + '</td><td>' + date + '</td><td class="actions"><button class="btn-warning blog-edit" data-id="' + p.id + '">编辑</button><button class="btn-danger blog-del" data-id="' + p.id + '">删除</button></td></tr>';
+    });
     h += '</tbody></table>';
     document.getElementById('blogList').innerHTML = h;
-    
-    // 重新绑定事件
-    document.querySelectorAll('.blog-edit').forEach(btn => {
-        btn.onclick = () => openPostModal(parseInt(btn.dataset.id));
-    });
-    document.querySelectorAll('.blog-del').forEach(btn => {
-        btn.onclick = () => deleteBlogPost(parseInt(btn.dataset.id));
-    });
+    document.querySelectorAll('.blog-edit').forEach(b => b.onclick = () => openPostModal(b.dataset.id));
+    document.querySelectorAll('.blog-del').forEach(b => b.onclick = () => deleteBlogPost(b.dataset.id));
 }
 
 function openPostModal(id) {
