@@ -1,3 +1,4 @@
+// functions/api/images-manage.js
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -16,7 +17,6 @@ export async function onRequest({ request, env }) {
     }
     
     const method = request.method;
-    const url = new URL(request.url);
     
     // GET - 获取图片列表
     if (method === 'GET') {
@@ -26,7 +26,6 @@ export async function onRequest({ request, env }) {
             
             if (keys && keys.keys) {
                 for (const key of keys.keys) {
-                    // 从 key.name 中提取文件名
                     let filename = key.name;
                     if (filename.startsWith('img:')) {
                         filename = filename.substring(4);
@@ -38,7 +37,6 @@ export async function onRequest({ request, env }) {
                 }
             }
             
-            // 按文件名倒序（最新的在前）
             images.sort((a, b) => b.filename.localeCompare(a.filename));
             
             return new Response(JSON.stringify({ code: 200, data: images, total: images.length }), {
@@ -63,7 +61,6 @@ export async function onRequest({ request, env }) {
                 });
             }
             
-            // 确保 key 格式正确
             const key = filename.startsWith('img:') ? filename : `img:${filename}`;
             await NAV_KV.delete(key);
             
