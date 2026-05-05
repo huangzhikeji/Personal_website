@@ -1,4 +1,4 @@
-// functions/api/images.js - 极简可用版
+// functions/api/images.js - 修复版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -106,7 +106,7 @@ async function loadImages() {
                 var img = data.data[i];
                 var name = img.filename.length > 25 ? img.filename.substring(0,22)+'...' : img.filename;
                 html += '<div class="image-card">' +
-                    '<img src="' + img.url + '" onerror="this.style.display=\'none\'">' +
+                    '<img src="' + img.url + '">' +
                     '<div class="filename" title="' + img.filename + '">' + name + '</div>' +
                     '<button class="small copy-btn" data-url="' + img.url + '">复制链接</button>' +
                     '<button class="small delete-btn" data-filename="' + img.filename + '">删除</button>' +
