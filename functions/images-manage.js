@@ -1,6 +1,5 @@
-// functions/images-manage.js
+// functions/images-manage.js - 简化测试版本
 export async function onRequest({ request, env }) {
-    // 检查登录状态
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
     let isLoggedIn = false;
@@ -17,182 +16,115 @@ export async function onRequest({ request, env }) {
         });
     }
     
-    // 返回完整的 HTML 页面
     return new Response(`<!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>图片管理 - 旭儿导航</title>
+    <title>图片管理</title>
     <style>
-        *{margin:0;padding:0;box-sizing:border-box}
-        body{font-family:system-ui,sans-serif;background:#f0f2f5;padding:24px}
-        .container{max-width:1200px;margin:0 auto}
-        .header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:20px 24px;border-radius:14px;margin-bottom:24px;display:flex;justify-content:space-between;align-items:center}
-        .header a{color:white;text-decoration:none;background:rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px}
-        .card{background:white;border-radius:14px;padding:24px;box-shadow:0 2px 8px rgba(0,0,0,0.07)}
-        .toolbar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-        .btn{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer}
-        .btn-danger{background:#e53e3e}
-        .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px}
-        .image-card{background:#f8fafc;border-radius:10px;padding:12px;border:1px solid #e2e8f0}
-        .image-card img{width:100%;height:150px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#f0f0f0}
-        .filename{font-size:11px;color:#4a5568;word-break:break-all;margin-bottom:10px}
-        .actions{display:flex;gap:8px}
-        .actions button{flex:1;padding:6px;border-radius:6px;cursor:pointer;font-size:11px}
-        .copy-btn{background:#667eea;color:white;border:none}
-        .delete-btn{background:#e53e3e;color:white;border:none}
-        .message{padding:12px 16px;border-radius:8px;margin-bottom:16px;display:none}
-        .message.success{background:#d4edda;color:#155724}
-        .message.error{background:#f8d7da;color:#721c24}
-        .stats{font-size:13px;color:#718096;margin-bottom:16px}
-        .loading{text-align:center;padding:60px;color:#999}
+        body{font-family:system-ui;padding:20px}
+        .container{max-width:800px;margin:0 auto}
+        button{padding:8px 16px;margin:5px;cursor:pointer}
+        .image-card{border:1px solid #ddd;padding:10px;margin:10px 0;border-radius:8px}
+        img{max-width:100px;max-height:100px}
+        .success{color:green}
+        .error{color:red}
     </style>
 </head>
 <body>
 <div class="container">
-    <div class="header">
-        <h1>🖼️ KV 图片管理</h1>
-        <a href="/admin">← 返回后台</a>
-    </div>
-    
-    <div class="card">
-        <div class="toolbar">
-            <button class="btn" id="refreshBtn">🔄 刷新列表</button>
-            <button class="btn btn-danger" id="clearAllBtn">🗑️ 清空所有图片</button>
-        </div>
-        <div id="message" class="message"></div>
-        <div id="stats" class="stats"></div>
-        <div id="imageList" class="image-grid">
-            <div class="loading">加载中...</div>
-        </div>
-    </div>
+    <h1>🖼️ KV 图片管理</h1>
+    <button id="refreshBtn">刷新列表</button>
+    <button id="clearAllBtn">清空所有</button>
+    <div id="stats"></div>
+    <div id="imageList"></div>
 </div>
 
 <script>
-function showMessage(msg, type) {
-    const msgDiv = document.getElementById('message');
-    msgDiv.textContent = msg;
-    msgDiv.className = 'message ' + type;
-    msgDiv.style.display = 'block';
-    setTimeout(() => msgDiv.style.display = 'none', 3000);
-}
-
 async function loadImages() {
     const container = document.getElementById('imageList');
     const stats = document.getElementById('stats');
     
-    container.innerHTML = '<div class="loading">加载中...</div>';
+    container.innerHTML = '加载中...';
     
     try {
         const res = await fetch('/api/images-manage', { credentials: 'include' });
         const data = await res.json();
         
         if (data.code === 200) {
-            stats.textContent = '📸 共 ' + data.total + ' 张图片';
+            stats.innerHTML = '共 ' + data.total + ' 张图片';
             
             if (data.data.length === 0) {
-                container.innerHTML = '<div class="loading">📭 暂无图片，上传文章图片后会显示在这里</div>';
+                container.innerHTML = '暂无图片';
                 return;
             }
             
             let html = '';
             for (const img of data.data) {
-                const displayName = img.filename.length > 30 ? img.filename.substring(0, 27) + '...' : img.filename;
-                html += '<div class="image-card">' +
-                    '<img src="' + escapeHtml(img.url) + '" onerror="this.src=\\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E❌%3C/text%3E%3C/svg%3E\\'">' +
-                    '<div class="filename" title="' + escapeHtml(img.filename) + '">📄 ' + escapeHtml(displayName) + '</div>' +
-                    '<div class="actions">' +
-                        '<button class="copy-btn" data-url="' + escapeHtml(img.url) + '">📋 复制链接</button>' +
-                        '<button class="delete-btn" data-filename="' + escapeHtml(img.filename) + '">🗑️ 删除</button>' +
-                    '</div>' +
-                '</div>';
+                html += '<div class="image-card">';
+                html += '<img src="' + img.url + '" onerror="this.style.display=\'none\'">';
+                html += '<div><strong>' + img.filename + '</strong></div>';
+                html += '<button class="copy-btn" data-url="' + img.url + '">复制链接</button>';
+                html += '<button class="delete-btn" data-filename="' + img.filename + '">删除</button>';
+                html += '</div>';
             }
             container.innerHTML = html;
             
             document.querySelectorAll('.copy-btn').forEach(btn => {
-                btn.onclick = async () => {
-                    const url = btn.dataset.url;
-                    await navigator.clipboard.writeText(url);
-                    const originalText = btn.textContent;
-                    btn.textContent = '✓ 已复制';
-                    setTimeout(() => btn.textContent = originalText, 2000);
+                btn.onclick = () => {
+                    navigator.clipboard.writeText(btn.dataset.url);
+                    btn.textContent = '已复制';
+                    setTimeout(() => btn.textContent = '复制链接', 2000);
                 };
             });
             
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async () => {
-                    const filename = btn.dataset.filename;
-                    if (!confirm('确定删除 "' + filename + '" 吗？\\n\\n⚠️ 删除后使用这张图片的文章将无法显示！')) return;
-                    
+                    if (!confirm('确定删除？')) return;
                     const res = await fetch('/api/images-manage', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename: filename }),
+                        body: JSON.stringify({ filename: btn.dataset.filename }),
                         credentials: 'include'
                     });
                     const data = await res.json();
                     if (data.code === 200) {
-                        showMessage('✅ 删除成功', 'success');
+                        alert('删除成功');
                         loadImages();
                     } else {
-                        showMessage('❌ 删除失败: ' + (data.message || '未知错误'), 'error');
+                        alert('删除失败: ' + data.message);
                     }
                 };
             });
         } else {
-            container.innerHTML = '<div class="loading">❌ 加载失败: ' + (data.message || '请先登录后台') + '</div>';
-            if (data.code === 401) {
-                showMessage('请先登录后台', 'error');
-            }
+            container.innerHTML = '加载失败: ' + data.message;
         }
     } catch (e) {
-        container.innerHTML = '<div class="loading">❌ 加载失败: ' + e.message + '</div>';
-        console.error('加载图片失败:', e);
+        container.innerHTML = '加载失败: ' + e.message;
     }
-}
-
-function escapeHtml(str) {
-    if (!str) return '';
-    return String(str).replace(/[&<>]/g, function(m) {
-        if (m === '&') return '&amp;';
-        if (m === '<') return '&lt;';
-        if (m === '>') return '&gt;';
-        return m;
-    });
 }
 
 document.getElementById('refreshBtn').onclick = loadImages;
 document.getElementById('clearAllBtn').onclick = async () => {
-    if (!confirm('⚠️ 警告：这将删除 KV 中所有图片！\\n\\n删除后所有使用这些图片的文章都会显示裂图。\\n\\n确定要继续吗？')) return;
-    
+    if (!confirm('确定清空所有图片？')) return;
     const res = await fetch('/api/images-manage', { credentials: 'include' });
     const data = await res.json();
-    
-    if (data.code === 200 && data.data.length > 0) {
-        let deleted = 0;
-        let failed = 0;
-        
+    if (data.data && data.data.length > 0) {
         for (const img of data.data) {
-            const delRes = await fetch('/api/images-manage', {
+            await fetch('/api/images-manage', {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ filename: img.filename }),
                 credentials: 'include'
             });
-            const delData = await delRes.json();
-            if (delData.code === 200) deleted++;
-            else failed++;
         }
-        
-        showMessage('清空完成：成功 ' + deleted + ' 张，失败 ' + failed + ' 张', deleted > 0 ? 'success' : 'error');
+        alert('清空完成');
         loadImages();
     } else {
-        showMessage('没有图片需要清空', 'error');
+        alert('没有图片');
     }
 };
 
-// 页面加载时自动加载图片列表
 loadImages();
 </script>
 </body>
