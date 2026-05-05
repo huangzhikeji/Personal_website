@@ -91,7 +91,7 @@ export async function onRequest({ request, env }) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>后 台 管 理</title>
+    <title>管理后台 · 旭儿导航</title>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <style>
@@ -141,7 +141,7 @@ export async function onRequest({ request, env }) {
 <body>
 <div class="container">
     <div class="header">
-        <h1>管 理 后 台</h1>
+        <h1>📚 旭儿导航 · 管理后台</h1>
         <div class="header-buttons">
             <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">🔑 修改密码</button>
             <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
@@ -173,32 +173,62 @@ export async function onRequest({ request, env }) {
 </div>
 
 <div class="grid-top">
+    <!-- Logo 设置卡片 -->
     <div class="card">
         <div class="card-title">🖼️ Logo 设置</div>
         <div class="logo-section">
-            <div class="logo-preview"><img id="logoPreview" style="display:none"><span id="noLogoHint">暂未设置 Logo</span></div>
-            <div class="logo-input-row"><input type="text" id="logoInput" placeholder="Logo 图片 URL（或点击上传）"><button id="uploadLogoBtn" class="btn-warning">📁 上传</button><button id="saveLogoBtn" class="btn-success">保存</button><button id="deleteLogoBtn" class="btn-danger">🗑️ 删除</button></div>
+            <div class="logo-preview">
+                <img id="logoPreview" style="display:none">
+                <span id="noLogoHint">暂未设置 Logo</span>
+            </div>
+            <div class="logo-input-row">
+                <input type="text" id="logoInput" placeholder="Logo 图片 URL（或点击上传）">
+                <button id="uploadLogoBtn" class="btn-warning">📁 上传</button>
+                <button id="saveLogoBtn" class="btn-success">保存</button>
+                <button id="deleteLogoBtn" class="btn-danger">🗑️ 删除</button>
+            </div>
             <input type="file" id="logoFileInput" accept="image/*" style="display:none">
-            <div class="logo-input-row"><input type="text" id="logoLinkInput" placeholder="Logo 点击跳转链接（可留空）"><button id="saveLogoLinkBtn" class="btn-success">保存</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="logoLinkInput" placeholder="Logo 点击跳转链接（可留空）">
+                <button id="saveLogoLinkBtn" class="btn-success">保存</button>
+            </div>
         </div>
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid #e2e8f0">
             <div style="font-size:13px;font-weight:600;color:#4a5568;margin-bottom:10px">🖼️ 页眉背景图</div>
-            <div id="headerBgPreviewWrap" style="display:none;margin-bottom:10px"><img id="headerBgPreview" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0"></div>
-            <div class="logo-input-row"><input type="text" id="headerBgInput" placeholder="背景图 URL（留空恢复默认渐变）"><button id="uploadHeaderBgBtn" class="btn-warning">📁 上传</button><button id="saveHeaderBgBtn" class="btn-success">保存</button></div>
+            <div id="headerBgPreviewWrap" style="display:none;margin-bottom:10px">
+                <img id="headerBgPreview" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0">
+            </div>
+            <div class="logo-input-row">
+                <input type="text" id="headerBgInput" placeholder="背景图 URL（留空恢复默认渐变）">
+                <button id="uploadHeaderBgBtn" class="btn-warning">📁 上传</button>
+                <button id="saveHeaderBgBtn" class="btn-success">保存</button>
+            </div>
             <input type="file" id="headerBgFileInput" accept="image/*" style="display:none">
             <small style="color:#a0aec0">留空并保存可恢复默认紫色渐变背景</small>
         </div>
     </div>
 
+    <!-- 站点信息卡片（含国内线路） -->
     <div class="card">
-        <div class="card-title">🌐 站点信息</div>
-        <div class="form-group"><label for="siteTitleInput">站点标题</label><input type="text" id="siteTitleInput" placeholder="旭儿综合网站" maxlength="50"></div>
-        <div class="form-group"><label for="siteSubtitleInput">站点副标题</label><input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100"></div>
-        <div class="form-group"><label for="cnLinkInput">🇨🇳 国外服务器</label><input type="url" id="cnLinkInput" placeholder="https://你的国外备用域名.com"></div>
+        <div class="card-title">🌐 站点设置</div>
+        <div class="form-group">
+            <label>站点标题</label>
+            <input type="text" id="siteTitleInput" placeholder="旭儿导航" maxlength="50">
+        </div>
+        <div class="form-group">
+            <label>站点副标题</label>
+            <input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100">
+        </div>
+        <div class="form-group">
+            <label>🇨🇳 国内线路链接</label>
+            <input type="url" id="cnLinkInput" placeholder="https://你的国内备用域名.com">
+            <small style="color:#a0aec0">填写后首页标题旁会显示按钮</small>
+        </div>
         <button id="saveSiteInfoBtn" class="btn-primary">💾 保存站点信息</button>
         <span id="siteInfoStatus" style="margin-left:10px;font-size:13px;"></span>
     </div>
     
+    <!-- 添加书签卡片 -->
     <div class="card">
         <div class="card-title">➕ 添加书签</div>
         <form id="addForm">
@@ -213,6 +243,7 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
+<!-- 文章编辑弹窗 -->
 <div id="postModal" class="modal">
     <div class="blog-modal-content">
         <div class="modal-header"><h3 id="postModalTitle">写新文章</h3><span class="close-post-modal" style="font-size:22px;cursor:pointer;color:#a0aec0">&times;</span></div>
@@ -228,13 +259,17 @@ export async function onRequest({ request, env }) {
         <div id="quill-editor-wrap"><div id="quill-editor"></div></div>
         <textarea id="postContent" style="display:none"></textarea>
         <div class="form-group"><label>标签</label><input type="text" id="postTags" placeholder="技术,生活"></div>
-        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px"><input type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b"><label for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">📌 置顶文章 <small style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）</small></label></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px">
+            <input type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b">
+            <label for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">📌 置顶文章 <small style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）</small></label>
+        </div>
         <div class="form-actions"><button type="button" id="cancelPostBtn" class="btn-secondary">取消</button><button type="button" id="savePostBtn" class="btn-success">保存</button></div>
     </div>
 </div>
 
 <input type="file" id="blogFileInput" accept="image/*" style="display:none">
 
+<!-- 编辑书签弹窗 -->
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3>✏️ 编辑书签</h3><span class="close-modal">&times;</span></div>
@@ -251,6 +286,7 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
+<!-- 修改密码弹窗 -->
 <div id="changePwdModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3>🔑 修改密码</h3><span class="close-pwd-modal">&times;</span></div>
@@ -282,6 +318,7 @@ function escapeHtml(str) {
     });
 }
 
+// ========== Logo 和背景图管理 ==========
 async function loadLogo() {
     const res = await fetch('/api/logo');
     const data = await res.json();
@@ -289,6 +326,7 @@ async function loadLogo() {
         document.getElementById('logoPreview').src = data.logo;
         document.getElementById('logoPreview').style.display = 'block';
         document.getElementById('noLogoHint').style.display = 'none';
+        document.getElementById('logoInput').value = data.logo;
     }
 }
 
@@ -310,6 +348,7 @@ async function loadHeaderBg() {
     }
 }
 
+// 上传相关
 document.getElementById('uploadHeaderBgBtn').onclick = () => document.getElementById('headerBgFileInput').click();
 document.getElementById('headerBgFileInput').onchange = async (e) => {
     const f = e.target.files[0];
@@ -401,6 +440,7 @@ document.getElementById('saveLogoLinkBtn').onclick = async () => {
     else { showMessage('保存失败', 'error'); }
 };
 
+// ========== 书签管理 ==========
 async function loadSites() {
     const res = await fetch('/api/config');
     const data = await res.json();
@@ -486,11 +526,13 @@ document.getElementById('editForm').onsubmit = async (e) => {
     else showMessage('修改失败', 'error');
 };
 
+// ========== 退出登录 ==========
 document.getElementById('logoutBtn').onclick = async () => {
     await fetch('/logout', { method: 'POST' });
     window.location.href = '/';
 };
 
+// ========== 修改密码 ==========
 const changePwdModal = document.getElementById('changePwdModal');
 function openChangePwdModal() { changePwdModal.style.display = 'flex'; }
 function closeChangePwdModal() { changePwdModal.style.display = 'none'; }
@@ -527,16 +569,10 @@ window.onclick = (e) => {
 document.querySelector('.close-modal').onclick = closeModal;
 document.querySelector('.close-modal-btn').onclick = closeModal;
 
-loadLogo();
-loadSiteInfo();
-loadLogoLink();
-loadHeaderBg();
-loadSites();
-loadBlogPosts();
-
+// ========== 博客管理 ==========
 let allPosts = [];
-
 let quill = null;
+
 function initQuill() {
     if (quill) return;
     quill = new Quill('#quill-editor', {
@@ -628,7 +664,7 @@ function renderBlogList() {
         const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('zh-CN') : '-';
         h += '<tr>';
         h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + p.id + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0"><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge">📌置顶</span>' : '') + '</td>';
+        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0"><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge" style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:12px;font-size:11px;margin-left:6px">📌置顶</span>' : '') + '</td>';
         h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + escapeHtml(p.category || '未分类') + '</td>';
         h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + badge + '</td>';
         h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + date + '</td>';
@@ -638,7 +674,6 @@ function renderBlogList() {
     h += '</tbody></table>';
     document.getElementById('blogList').innerHTML = h;
     
-    // 重新绑定事件
     document.querySelectorAll('.blog-edit').forEach(btn => {
         btn.onclick = () => openPostModal(parseInt(btn.dataset.id));
     });
@@ -724,6 +759,7 @@ document.getElementById('postModal').addEventListener('click', e => {
     if (e.target === document.getElementById('postModal')) closePostModal();
 });
 
+// ========== 站点信息 ==========
 async function loadSiteInfo() {
     try {
         const res = await fetch('/api/site-info');
@@ -766,6 +802,14 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
         setTimeout(() => { status.textContent = ''; }, 3000);
     }
 });
+
+// 初始化加载
+loadLogo();
+loadSiteInfo();
+loadLogoLink();
+loadHeaderBg();
+loadSites();
+loadBlogPosts();
 </script>
 </body>
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
