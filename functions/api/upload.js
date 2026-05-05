@@ -1,3 +1,4 @@
+// functions/api/upload.js
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -36,10 +37,33 @@ export async function onRequest({ request, env }) {
         const base64 = btoa(binary);
 
         const ext = file.type.split('/')[1] || 'jpg';
-        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
-        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`, {
-            expirationTtl: 86400 * 30
+        const originalName = file.name.replace(/\.[^/.]+$/, '');
+        const cleanName = originalName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '');
+        const finalName = cleanName || 'image';
+        const filename = `${finalName}_${Date.now()}.${ext}`;
+        
+        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
+
+        // 更新图片列表
+        let imageList = [];
+        const listData = await NAV_KV.get('image_list');
+        if (listData) {
+            try {
+                imageList = JSON.parse(listData);
+            } catch(e) {}
+        }
+        
+        imageList.unshift({
+            filename: filename,
+            url: `/api/image/${filename}`,
+            createdAt: Date.now()
         });
+        
+        if (imageList.length > 100) {
+            imageList = imageList.slice(0, 100);
+        }
+        
+        await NAV_KV.put('image_list', JSON.stringify(imageList));
 
         return new Response(JSON.stringify({ code: 200, url: `/api/image/${filename}` }), {
             headers: { 'Content-Type': 'application/json' }
