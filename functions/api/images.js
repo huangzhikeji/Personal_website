@@ -86,7 +86,7 @@ export async function onRequest({ request, env }) {
         .stats{font-size:13px;color:#666;margin-top:10px;display:inline-block;margin-left:10px}
         .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:15px;margin-top:20px}
         .image-card{background:#f8fafc;border-radius:10px;padding:10px;border:1px solid #e2e8f0}
-        .image-card img{width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:8px}
+        .image-card img{width:100%;height:110px;object-fit:cover;border-radius:8px;margin-bottom:8px;background:#f0f0f0}
         .filename{font-size:10px;color:#666;word-break:break-all;margin-bottom:8px}
         .actions{display:flex;gap:6px}
         .actions button{flex:1;padding:5px;border-radius:5px;cursor:pointer;font-size:10px;border:none}
@@ -116,7 +116,7 @@ export async function onRequest({ request, env }) {
 async function loadImages() {
     var container = document.getElementById('imageList');
     var statsDiv = document.getElementById('stats');
-    container.innerHTML = '<div class=\"loading\">加载中...</div>';
+    container.innerHTML = '<div class="loading">加载中...</div>';
     
     try {
         var keys = await NAV_KV.list({ prefix: 'img:' });
@@ -137,23 +137,24 @@ async function loadImages() {
             return 0;
         });
         
-        statsDiv.innerText = images.length === 0 ? '' : '共 ' + images.length + ' 张';
-        
         if (images.length === 0) {
-            container.innerHTML = '<div class=\"loading\">暂无图片，点击「上传图片」添加</div>';
+            statsDiv.innerText = '';
+            container.innerHTML = '<div class="loading">暂无图片，点击「上传图片」添加</div>';
             return;
         }
+        
+        statsDiv.innerText = '共 ' + images.length + ' 张';
         
         var html = '';
         for (var j = 0; j < images.length; j++) {
             var img = images[j];
             var displayName = img.filename.length > 28 ? img.filename.substring(0, 25) + '...' : img.filename;
-            html += '<div class=\"image-card\">' +
-                '<img src=\"' + img.url + '\" onerror=\"this.style.display=' + "'none'" + '\">' +
-                '<div class=\"filename\" title=\"' + img.filename + '\"> ' + displayName + '</div>' +
-                '<div class=\"actions\">' +
-                    '<button class=\"copy-btn\" data-url=\"' + img.url + '\">复制</button>' +
-                    '<button class=\"delete-btn\" data-filename=\"' + img.filename + '\">删除</button>' +
+            html += '<div class="image-card">' +
+                '<img src="' + img.url + '" onerror="this.style.display=\'none\'">' +
+                '<div class="filename" title="' + img.filename + '"> ' + displayName + '</div>' +
+                '<div class="actions">' +
+                    '<button class="copy-btn" data-url="' + img.url + '">复制</button>' +
+                    '<button class="delete-btn" data-filename="' + img.filename + '">删除</button>' +
                 '</div>' +
             '</div>';
         }
@@ -190,7 +191,7 @@ async function loadImages() {
             };
         }
     } catch (e) {
-        container.innerHTML = '<div class=\"loading\">加载失败: ' + e.message + '</div>';
+        container.innerHTML = '<div class="loading">加载失败: ' + e.message + '</div>';
     }
 }
 
@@ -211,12 +212,12 @@ document.getElementById('fileInput').onchange = async function(e) {
         var data = await res.json();
         if (data.code === 200) {
             alert('上传成功');
-            loadImages();
+            await loadImages();
         } else {
             alert('上传失败: ' + data.message);
         }
     } catch (err) {
-        alert('上传失败');
+        alert('上传失败: ' + err.message);
     } finally {
         btn.textContent = '上传图片';
         btn.disabled = false;
