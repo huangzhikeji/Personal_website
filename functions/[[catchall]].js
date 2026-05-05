@@ -1,14 +1,14 @@
 // EdgeOne Pages - 旭儿导航完整版
 export async function onRequest({ env, request }) {
     const url = new URL(request.url);
-    const sites = await getSites();
-    const posts = await getBlogPosts();
-    let logo = await getLogo();
-    const logoLink = await getLogoLink();
-    let headerBg = await getHeaderBg();
-    const siteTitle = await getSiteTitle();
-    const siteSubtitle = await getSiteSubtitle();
-    const cnLink = await getCnLink();
+    const sites = await getSites(env);
+    const posts = await getBlogPosts(env);
+    let logo = await getLogo(env);
+    const logoLink = await getLogoLink(env);
+    let headerBg = await getHeaderBg(env);
+    const siteTitle = await getSiteTitle(env);
+    const siteSubtitle = await getSiteSubtitle(env);
+    const cnLink = await getCnLink(env);
     
     if (!logo || logo === '') logo = '/img/logo.png';
     if (!headerBg || headerBg === '') headerBg = '/img/bg.jpg';
@@ -73,8 +73,7 @@ export async function onRequest({ env, request }) {
     
     let blogListHtml = blogPosts.map(post => {
         const views = viewsMap.get(post.id) || 0;
-        const coverHtml = post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : '';
-        return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${coverHtml}</div></div>`;
+        return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : ''}</div></div>`;
     }).join('');
     if (!blogListHtml) blogListHtml = '<div style="text-align:center;padding:60px">暂无文章</div>';
     
@@ -184,13 +183,13 @@ export async function onRequest({ env, request }) {
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-async function getSites() { try { const d = await NAV_KV.get('sites'); return d ? JSON.parse(d) : []; } catch { return []; } }
-async function getBlogPosts() { try { const d = await NAV_KV.get('blog_posts'); return d ? JSON.parse(d) : []; } catch { return []; } }
-async function getLogo() { try { return await NAV_KV.get('site_logo') || ''; } catch { return ''; } }
-async function getLogoLink() { try { return await NAV_KV.get('site_logo_link') || ''; } catch { return ''; } }
-async function getHeaderBg() { try { return await NAV_KV.get('header_bg') || ''; } catch { return ''; } }
-async function getSiteTitle() { try { return await NAV_KV.get('site_title') || ''; } catch { return ''; } }
-async function getSiteSubtitle() { try { return await NAV_KV.get('site_subtitle') || ''; } catch { return ''; } }
-async function getCnLink() { try { return await NAV_KV.get('cn_link') || ''; } catch { return ''; } }
+async function getSites(env) { try { const d = await NAV_KV.get('sites'); return d ? JSON.parse(d) : []; } catch { return []; } }
+async function getBlogPosts(env) { try { const d = await NAV_KV.get('blog_posts'); return d ? JSON.parse(d) : []; } catch { return []; } }
+async function getLogo(env) { try { return await NAV_KV.get('site_logo') || ''; } catch { return ''; } }
+async function getLogoLink(env) { try { return await NAV_KV.get('site_logo_link') || ''; } catch { return ''; } }
+async function getHeaderBg(env) { try { return await NAV_KV.get('header_bg') || ''; } catch { return ''; } }
+async function getSiteTitle(env) { try { return await NAV_KV.get('site_title') || ''; } catch { return ''; } }
+async function getSiteSubtitle(env) { try { return await NAV_KV.get('site_subtitle') || ''; } catch { return ''; } }
+async function getCnLink(env) { try { return await NAV_KV.get('cn_link') || ''; } catch { return ''; } }
 function escapeHtml(s) { if(!s) return ''; return String(s).replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
 function sanitizeUrl(u) { if(!u) return ''; let s=String(u).trim(); if(!s.startsWith('http')) s='https://'+s; return s; }
