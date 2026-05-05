@@ -1,3 +1,4 @@
+// functions/api/upload.js
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -28,7 +29,7 @@ export async function onRequest({ request, env }) {
 
         const bytes = new Uint8Array(await file.arrayBuffer());
 
-        // 分块 base64 编码，避免大图片栈溢出
+        // 分块 base64 编码
         let binary = '';
         const CHUNK = 8192;
         for (let i = 0; i < bytes.length; i += CHUNK) {
@@ -37,10 +38,15 @@ export async function onRequest({ request, env }) {
         const base64 = btoa(binary);
 
         const ext = file.type.split('/')[1] || 'jpg';
-        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
-        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`, {
-            expirationTtl: 86400 * 30
-        });
+        
+        // 保留原文件名，清理特殊字符
+        const originalName = file.name.replace(/\.[^/.]+$/, '');
+        const cleanName = originalName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '');
+        const finalName = cleanName || 'image';
+        const filename = `${finalName}_${Date.now()}.${ext}`;
+        
+        // 永不过期（不传 expirationTtl 参数）
+        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
 
         return new Response(JSON.stringify({ code: 200, url: `/api/image/${filename}` }), {
             headers: { 'Content-Type': 'application/json' }
