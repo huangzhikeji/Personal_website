@@ -92,7 +92,7 @@ async function loadImages() {
             stats.textContent = '📸 共 ' + data.total + ' 张图片';
             
             if (data.data.length === 0) {
-                container.innerHTML = '<div class="loading">📭 暂无图片</div>';
+                container.innerHTML = '<div class="loading">📭 暂无图片，上传文章图片后会显示在这里</div>';
                 return;
             }
             
@@ -123,11 +123,12 @@ async function loadImages() {
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async () => {
                     const filename = btn.dataset.filename;
-                    if (!confirm('确定删除 "' + filename + '" 吗？')) return;
+                    if (!confirm('确定删除 "' + filename + '" 吗？\\n\\n⚠️ 删除后使用这张图片的文章将无法显示！')) return;
+                    
                     const res = await fetch('/api/images-manage', {
                         method: 'DELETE',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename }),
+                        body: JSON.stringify({ filename: filename }),
                         credentials: 'include'
                     });
                     const data = await res.json();
@@ -135,15 +136,19 @@ async function loadImages() {
                         showMessage('✅ 删除成功', 'success');
                         loadImages();
                     } else {
-                        showMessage('❌ 删除失败', 'error');
+                        showMessage('❌ 删除失败: ' + (data.message || '未知错误'), 'error');
                     }
                 };
             });
         } else {
-            container.innerHTML = '<div class="loading">❌ 加载失败</div>';
+            container.innerHTML = '<div class="loading">❌ 加载失败: ' + (data.message || '请先登录后台') + '</div>';
+            if (data.code === 401) {
+                showMessage('请先登录后台', 'error');
+            }
         }
     } catch (e) {
         container.innerHTML = '<div class="loading">❌ 加载失败: ' + e.message + '</div>';
+        console.error('加载图片失败:', e);
     }
 }
 
@@ -159,11 +164,15 @@ function escapeHtml(str) {
 
 document.getElementById('refreshBtn').onclick = loadImages;
 document.getElementById('clearAllBtn').onclick = async () => {
-    if (!confirm('⚠️ 确定要清空所有图片吗？')) return;
+    if (!confirm('⚠️ 警告：这将删除 KV 中所有图片！\\n\\n删除后所有使用这些图片的文章都会显示裂图。\\n\\n确定要继续吗？')) return;
+    
     const res = await fetch('/api/images-manage', { credentials: 'include' });
     const data = await res.json();
+    
     if (data.code === 200 && data.data.length > 0) {
         let deleted = 0;
+        let failed = 0;
+        
         for (const img of data.data) {
             const delRes = await fetch('/api/images-manage', {
                 method: 'DELETE',
@@ -173,14 +182,17 @@ document.getElementById('clearAllBtn').onclick = async () => {
             });
             const delData = await delRes.json();
             if (delData.code === 200) deleted++;
+            else failed++;
         }
-        showMessage('清空完成：成功 ' + deleted + ' 张', 'success');
+        
+        showMessage('清空完成：成功 ' + deleted + ' 张，失败 ' + failed + ' 张', deleted > 0 ? 'success' : 'error');
         loadImages();
     } else {
         showMessage('没有图片需要清空', 'error');
     }
 };
 
+// 页面加载时自动加载图片列表
 loadImages();
 </script>
 </body>
