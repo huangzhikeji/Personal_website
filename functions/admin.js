@@ -322,12 +322,15 @@ function escapeHtml(str) {
 async function loadLogo() {
     const res = await fetch('/api/logo');
     const data = await res.json();
-    if (data.code === 200 && data.logo) {
-        document.getElementById('logoPreview').src = data.logo;
-        document.getElementById('logoPreview').style.display = 'block';
+    const logoUrl = data.logo || '/img/logo.png';
+    const logoPreview = document.getElementById('logoPreview');
+    if (logoPreview) {
+        logoPreview.src = logoUrl;
+        logoPreview.style.display = 'block';
         document.getElementById('noLogoHint').style.display = 'none';
-        document.getElementById('logoInput').value = data.logo;
     }
+    const logoInput = document.getElementById('logoInput');
+    if (logoInput) logoInput.value = logoUrl;
 }
 
 async function loadLogoLink() {
@@ -344,6 +347,10 @@ async function loadHeaderBg() {
     if (data.code === 200 && data.bg) {
         document.getElementById('headerBgInput').value = data.bg;
         document.getElementById('headerBgPreview').src = data.bg;
+        document.getElementById('headerBgPreviewWrap').style.display = 'block';
+    } else {
+        document.getElementById('headerBgInput').value = '/img/bg.jpg';
+        document.getElementById('headerBgPreview').src = '/img/bg.jpg';
         document.getElementById('headerBgPreviewWrap').style.display = 'block';
     }
 }
@@ -380,7 +387,8 @@ document.getElementById('saveHeaderBgBtn').onclick = async () => {
             document.getElementById('headerBgPreview').src = bg;
             document.getElementById('headerBgPreviewWrap').style.display = 'block';
         } else {
-            document.getElementById('headerBgPreviewWrap').style.display = 'none';
+            document.getElementById('headerBgPreview').src = '/img/bg.jpg';
+            document.getElementById('headerBgPreviewWrap').style.display = 'block';
         }
     } else { showMessage('保存失败', 'error'); }
 };
@@ -414,8 +422,9 @@ document.getElementById('saveLogoBtn').onclick = async () => {
             document.getElementById('logoPreview').style.display = 'block';
             document.getElementById('noLogoHint').style.display = 'none';
         } else {
-            document.getElementById('logoPreview').style.display = 'none';
-            document.getElementById('noLogoHint').style.display = 'inline';
+            document.getElementById('logoPreview').src = '/img/logo.png';
+            document.getElementById('logoPreview').style.display = 'block';
+            document.getElementById('noLogoHint').style.display = 'none';
         }
     } else { showMessage('保存失败', 'error'); }
 };
@@ -426,9 +435,10 @@ document.getElementById('deleteLogoBtn').onclick = async () => {
     const res = await fetch('/api/logo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logo: '' }) });
     const data = await res.json();
     if (data.code === 200) {
-        document.getElementById('logoPreview').style.display = 'none';
-        document.getElementById('noLogoHint').style.display = 'inline';
-        showMessage('Logo 已删除', 'success');
+        document.getElementById('logoPreview').src = '/img/logo.png';
+        document.getElementById('logoPreview').style.display = 'block';
+        document.getElementById('noLogoHint').style.display = 'none';
+        showMessage('Logo 已恢复默认', 'success');
     } else { showMessage('删除失败', 'error'); }
 };
 
