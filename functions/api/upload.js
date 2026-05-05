@@ -1,4 +1,3 @@
-// functions/api/upload.js
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -37,13 +36,10 @@ export async function onRequest({ request, env }) {
         const base64 = btoa(binary);
 
         const ext = file.type.split('/')[1] || 'jpg';
-        const originalName = file.name.replace(/\.[^/.]+$/, '');
-        const cleanName = originalName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '');
-        const finalName = cleanName || 'image';
-        const filename = `${finalName}_${Date.now()}.${ext}`;
-        
-        // 永不过期（不传 expirationTtl）
-        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
+        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
+        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`, {
+            expirationTtl: 86400 * 30
+        });
 
         return new Response(JSON.stringify({ code: 200, url: `/api/image/${filename}` }), {
             headers: { 'Content-Type': 'application/json' }
