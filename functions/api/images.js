@@ -1,4 +1,4 @@
-// functions/api/images.js - 完整可用版（已修复语法错误）
+// functions/api/images.js - 完整可用版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -116,7 +116,7 @@ export async function onRequest({ request, env }) {
 async function loadImages() {
     var container = document.getElementById('imageList');
     var statsDiv = document.getElementById('stats');
-    container.innerHTML = '<div class="loading">加载中...</div>';
+    container.innerHTML = '<div class=\"loading\">加载中...</div>';
     
     try {
         var keys = await NAV_KV.list({ prefix: 'img:' });
@@ -140,7 +140,7 @@ async function loadImages() {
         statsDiv.innerText = images.length === 0 ? '' : '共 ' + images.length + ' 张';
         
         if (images.length === 0) {
-            container.innerHTML = '<div class="loading">暂无图片，点击「上传图片」添加</div>';
+            container.innerHTML = '<div class=\"loading\">暂无图片，点击「上传图片」添加</div>';
             return;
         }
         
@@ -148,12 +148,12 @@ async function loadImages() {
         for (var j = 0; j < images.length; j++) {
             var img = images[j];
             var displayName = img.filename.length > 28 ? img.filename.substring(0, 25) + '...' : img.filename;
-            html += '<div class="image-card">' +
-                '<img src="' + img.url + '" onerror="this.style.display=\'none\'">' +
-                '<div class="filename" title="' + img.filename + '"> ' + displayName + '</div>' +
-                '<div class="actions">' +
-                    '<button class="copy-btn" data-url="' + img.url + '">复制</button>' +
-                    '<button class="delete-btn" data-filename="' + img.filename + '">删除</button>' +
+            html += '<div class=\"image-card\">' +
+                '<img src=\"' + img.url + '\" onerror=\"this.style.display=' + "'none'" + '\">' +
+                '<div class=\"filename\" title=\"' + img.filename + '\"> ' + displayName + '</div>' +
+                '<div class=\"actions\">' +
+                    '<button class=\"copy-btn\" data-url=\"' + img.url + '\">复制</button>' +
+                    '<button class=\"delete-btn\" data-filename=\"' + img.filename + '\">删除</button>' +
                 '</div>' +
             '</div>';
         }
@@ -190,7 +190,7 @@ async function loadImages() {
             };
         }
     } catch (e) {
-        container.innerHTML = '<div class="loading">加载失败: ' + e.message + '</div>';
+        container.innerHTML = '<div class=\"loading\">加载失败: ' + e.message + '</div>';
     }
 }
 
