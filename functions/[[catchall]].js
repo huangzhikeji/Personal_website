@@ -1,4 +1,4 @@
-// EdgeOne Pages - 旭儿导航完整版（使用静态文件作为默认Logo和背景图）
+// EdgeOne Pages - 旭儿导航完整版（使用 /img/ 静态文件作为默认Logo和背景图）
 export async function onRequest({ env, request }) {
     const url = new URL(request.url);
     const sites = await getSites(env);
@@ -12,11 +12,11 @@ export async function onRequest({ env, request }) {
     
     // 如果没有自定义Logo，使用静态文件
     if (!logo || logo === '') {
-        logo = '/static/img/logo.png';
+        logo = '/img/logo.png';
     }
     // 如果没有自定义背景图，使用静态文件
     if (!headerBg || headerBg === '') {
-        headerBg = '/static/img/bg.jpg';
+        headerBg = '/img/bg.jpg';
     }
     
     const currentTab = url.searchParams.get('tab') || 'blog';
