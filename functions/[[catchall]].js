@@ -155,7 +155,7 @@ let blogListHtml = blogPosts.map(post => {
         </div>
     </div>
     <div class="main">
-        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航可自定义')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">国外用户点击.Foreign users click</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客可自定义')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
+        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航可自定义')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">切换服务器</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客可自定义')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
         <div class="content">
             <div class="content-header"><h2>${title}</h2><div class="tab-buttons"><button class="tab-btn ${currentTab === 'blog' ? 'active' : ''}" data-tab="blog">📝 博客</button><button class="tab-btn ${currentTab === 'bookmark' ? 'active' : ''}" data-tab="bookmark">🔖 书签</button></div></div>
             <div id="blog-view" style="display:${currentTab === 'blog' ? 'block' : 'none'}">
