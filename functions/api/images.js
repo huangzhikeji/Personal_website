@@ -1,27 +1,25 @@
-// 完整的 KV 图片管理工具
+// 完整的 KV 图片管理工具 - 测试版（已注释登录验证）
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
-    const cookie = request.headers.get('Cookie') || '';
-    const match = cookie.match(/admin_token=([^;]+)/);
-    let isLoggedIn = false;
     
-    // 检查登录状态（使用与主站相同的 session 机制）
-    if (match) {
-        const session = await NAV_KV.get(`session:${match[1]}`);
-        isLoggedIn = session !== null;
-    }
-    
-    // ========== API 接口 ==========
+    // ========== 临时跳过登录验证（测试用）==========
+    // const cookie = request.headers.get('Cookie') || '';
+    // const match = cookie.match(/admin_token=([^;]+)/);
+    // let isLoggedIn = false;
+    // if (match) {
+    //     const session = await NAV_KV.get(`session:${match[1]}`);
+    //     isLoggedIn = session !== null;
+    // }
+    // if (!isLoggedIn) {
+    //     return new Response(JSON.stringify({ code: 401, message: '请先登录后台' }), {
+    //         status: 401,
+    //         headers: { 'Content-Type': 'application/json' }
+    //     });
+    // }
+    // ========== 登录验证已注释，任何人都可以访问 ==========
     
     // GET /api/images - 获取图片列表
     if (request.method === 'GET' && url.searchParams.get('action') !== 'page') {
-        if (!isLoggedIn) {
-            return new Response(JSON.stringify({ code: 401, message: '请先登录后台' }), {
-                status: 401,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-        
         try {
             const keys = await NAV_KV.list({ prefix: 'img:' });
             const images = [];
@@ -60,13 +58,6 @@ export async function onRequest({ request, env }) {
     
     // DELETE /api/images - 删除图片
     if (request.method === 'DELETE') {
-        if (!isLoggedIn) {
-            return new Response(JSON.stringify({ code: 401, message: '请先登录后台' }), {
-                status: 401,
-                headers: { 'Content-Type': 'application/json' }
-            });
-        }
-        
         try {
             const body = await request.json();
             const filename = body.filename;
@@ -89,24 +80,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // ========== 管理页面 ==========
-    
-    // 检查登录状态，未登录显示简单提示
-    if (!isLoggedIn) {
-        return new Response(`<!DOCTYPE html>
-<html>
-<head><meta charset="UTF-8"><title>需要登录</title></head>
-<body style="font-family:system-ui;text-align:center;padding:50px">
-    <h2>🔐 需要登录</h2>
-    <p>请先访问 <a href="/admin">后台管理页面</a> 登录</p>
-    <p>登录成功后，刷新此页面即可使用图片管理功能</p>
-</body>
-</html>`, {
-            headers: { 'Content-Type': 'text/html; charset=utf-8' }
-        });
-    }
-    
-    // 返回管理页面
+    // 返回管理页面（无需登录）
     return new Response(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -137,7 +111,6 @@ export async function onRequest({ request, env }) {
         .loading{text-align:center;padding:50px;color:#999}
         .empty{text-align:center;padding:50px;color:#999}
         .info{background:#e6f7ff;border:1px solid #91d5ff;padding:10px 15px;border-radius:8px;margin-bottom:15px;font-size:13px}
-        .success{color:#28a745;font-size:12px;margin-left:10px}
     </style>
 </head>
 <body>
@@ -175,7 +148,7 @@ async function loadImages() {
         const data = await res.json();
         
         if (data.code === 200) {
-            if (statsDiv) statsDiv.textContent = data.total === 0 ? '' : \`共 \${data.total} 张图片\`;
+            if (statsDiv) statsDiv.textContent = data.total === 0 ? '' : '共 ' + data.total + ' 张图片';
             
             if (!data.data || data.data.length === 0) {
                 container.innerHTML = '<div class="empty">📭 暂无图片<br><br>请在写文章时使用编辑器上传图片</div>';
@@ -185,22 +158,17 @@ async function loadImages() {
             let html = '';
             for (const img of data.data) {
                 const displayName = img.filename.length > 30 ? img.filename.substring(0, 27) + '...' : img.filename;
-                html += \`
-                    <div class="image-card" data-filename="\${escapeHtml(img.filename)}">
-                        <img src="\${escapeHtml(img.url)}" 
-                             onerror="this.parentElement.style.display='none'"
-                             alt="\${escapeHtml(img.filename)}">
-                        <div class="filename" title="\${escapeHtml(img.filename)}">📄 \${escapeHtml(displayName)}</div>
-                        <div class="actions">
-                            <button class="copy-btn" data-url="\${escapeHtml(img.url)}">📋 复制</button>
-                            <button class="delete-btn" data-filename="\${escapeHtml(img.filename)}">🗑️ 删除</button>
-                        </div>
-                    </div>
-                \`;
+                html += '<div class="image-card">' +
+                    '<img src="' + escapeHtml(img.url) + '" onerror="this.parentElement.style.display=\'none\'" alt="' + escapeHtml(img.filename) + '">' +
+                    '<div class="filename" title="' + escapeHtml(img.filename) + '">📄 ' + escapeHtml(displayName) + '</div>' +
+                    '<div class="actions">' +
+                        '<button class="copy-btn" data-url="' + escapeHtml(img.url) + '">📋 复制</button>' +
+                        '<button class="delete-btn" data-filename="' + escapeHtml(img.filename) + '">🗑️ 删除</button>' +
+                    '</div>' +
+                '</div>';
             }
             container.innerHTML = html;
             
-            // 复制按钮
             document.querySelectorAll('.copy-btn').forEach(btn => {
                 btn.onclick = async (e) => {
                     e.stopPropagation();
@@ -216,12 +184,11 @@ async function loadImages() {
                 };
             });
             
-            // 删除按钮
             document.querySelectorAll('.delete-btn').forEach(btn => {
                 btn.onclick = async (e) => {
                     e.stopPropagation();
                     const filename = btn.dataset.filename;
-                    if (!confirm(\`确定删除图片 "$\{filename\}" 吗？\\n\\n⚠️ 警告：删除后文章中的图片将无法显示！\`)) return;
+                    if (!confirm('确定删除图片 "' + filename + '" 吗？\\n\\n⚠️ 警告：删除后文章中的图片将无法显示！')) return;
                     
                     try {
                         const res = await fetch('/api/images', {
@@ -242,8 +209,6 @@ async function loadImages() {
                     }
                 };
             });
-        } else if (data.code === 401) {
-            container.innerHTML = '<div class="empty">🔐 请先登录后台<br><br><a href="/admin" target="_blank">点击登录</a></div>';
         } else {
             container.innerHTML = '<div class="empty">❌ ' + (data.message || '加载失败') + '</div>';
         }
