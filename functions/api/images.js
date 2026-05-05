@@ -1,4 +1,4 @@
-// functions/api/images.js - 实时扫描版本
+// functions/api/images.js - 最终版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -27,6 +27,15 @@ export async function onRequest({ request, env }) {
             // 保存图片
             await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
             
+            // 更新图片列表
+            let imageList = [];
+            const existingList = await NAV_KV.get('image_urls');
+            if (existingList) {
+                try { imageList = JSON.parse(existingList); } catch(e) {}
+            }
+            imageList.unshift({ filename: filename, url: '/api/image/' + filename });
+            await NAV_KV.put('image_urls', JSON.stringify(imageList));
+            
             return new Response(JSON.stringify({ code: 200, url: '/api/image/' + filename }), {
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -45,6 +54,13 @@ export async function onRequest({ request, env }) {
             
             await NAV_KV.delete('img:' + filename);
             
+            const existingList = await NAV_KV.get('image_urls');
+            if (existingList) {
+                let imageList = JSON.parse(existingList);
+                imageList = imageList.filter(img => img.filename !== filename);
+                await NAV_KV.put('image_urls', JSON.stringify(imageList));
+            }
+            
             return new Response(JSON.stringify({ code: 200 }), {
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -55,21 +71,11 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 获取图片列表 - 实时扫描 KV
+    // 获取图片列表 - 从 image_urls 读取
     if (request.method === 'GET' && url.searchParams.get('list') === '1') {
         try {
-            const keys = await NAV_KV.list({ prefix: 'img:' });
-            const images = [];
-            if (keys && keys.keys) {
-                for (const key of keys.keys) {
-                    let filename = key.name;
-                    if (filename.startsWith('img:')) {
-                        filename = filename.substring(4);
-                    }
-                    images.push({ filename: filename, url: '/api/image/' + filename });
-                }
-            }
-            images.sort((a, b) => b.filename.localeCompare(a.filename));
+            const existingList = await NAV_KV.get('image_urls');
+            let images = existingList ? JSON.parse(existingList) : [];
             return new Response(JSON.stringify({ code: 200, data: images }), {
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -92,6 +98,7 @@ export async function onRequest({ request, env }) {
         .card{background:white;border-radius:12px;padding:20px}
         button{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer}
         .btn-green{background:#38a169}
+        .btn-orange{background:#ed8936}
         .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px;margin-top:20px}
         .image-card{background:#f8fafc;border-radius:8px;padding:10px;border:1px solid #ddd}
         .image-card img{width:100%;height:100px;object-fit:cover;border-radius:6px}
@@ -105,9 +112,12 @@ export async function onRequest({ request, env }) {
 <div class="container">
     <div class="card">
         <h2>图片管理</h2>
-        <button id="uploadBtn" class="btn-green">上传图片</button>
-        <button id="refreshBtn">刷新列表</button>
-        <span id="stats" style="margin-left:10px"></span>
+        <div style="margin-bottom:15px">
+            <button id="uploadBtn" class="btn-green">上传图片</button>
+            <button id="refreshBtn">刷新列表</button>
+            <button id="importBtn" class="btn-orange">导入老图片</button>
+            <span id="stats" style="margin-left:10px"></span>
+        </div>
         <input type="file" id="fileInput" accept="image/*" style="display:none">
         <div id="imageList" class="image-grid"><div class="loading">加载中...</div></div>
     </div>
@@ -171,6 +181,28 @@ async function loadImages() {
         container.innerHTML = '<div class="loading">加载失败: ' + e.message + '</div>';
     }
 }
+
+// 导入老图片
+document.getElementById('importBtn').onclick = async function() {
+    var btn = this;
+    btn.textContent = '导入中...';
+    btn.disabled = true;
+    try {
+        var res = await fetch('/api/import');
+        var data = await res.json();
+        if (data.success) {
+            alert('导入成功！共导入 ' + data.total + ' 张图片');
+            loadImages();
+        } else {
+            alert('导入失败: ' + (data.message || '未知错误'));
+        }
+    } catch(err) {
+        alert('导入失败: ' + err.message);
+    } finally {
+        btn.textContent = '导入老图片';
+        btn.disabled = false;
+    }
+};
 
 document.getElementById('uploadBtn').onclick = function() {
     document.getElementById('fileInput').click();
