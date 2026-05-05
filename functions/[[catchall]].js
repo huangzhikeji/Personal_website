@@ -1,14 +1,17 @@
-// EdgeOne Pages - 旭儿导航完整版（修复置顶功能）
+// EdgeOne Pages - 旭儿导航完整版
 export async function onRequest({ env, request }) {
     const url = new URL(request.url);
-    const sites = await getSites(env);
-    const posts = await getBlogPosts(env);
-    const logo = await getLogo(env);
-    const logoLink = await getLogoLink(env);
-    const headerBg = await getHeaderBg(env);
-    const siteTitle = await getSiteTitle(env);
-    const siteSubtitle = await getSiteSubtitle(env);
-    const cnLink = await getCnLink(env);
+    const sites = await getSites();
+    const posts = await getBlogPosts();
+    let logo = await getLogo();
+    const logoLink = await getLogoLink();
+    let headerBg = await getHeaderBg();
+    const siteTitle = await getSiteTitle();
+    const siteSubtitle = await getSiteSubtitle();
+    const cnLink = await getCnLink();
+    
+    if (!logo || logo === '') logo = '/img/logo.png';
+    if (!headerBg || headerBg === '') headerBg = '/img/bg.jpg';
     
     const currentTab = url.searchParams.get('tab') || 'blog';
     const searchQuery = url.searchParams.get('q') || '';
@@ -52,7 +55,6 @@ export async function onRequest({ env, request }) {
         blogPosts = blogPosts.filter(p => p.tags && p.tags.some(t => t.toLowerCase() === currentTag.toLowerCase()));
     }
     
-    // 确保 pinned 是布尔值，然后排序（置顶文章排前面）
     blogPosts = blogPosts.map(p => ({ ...p, pinned: p.pinned === true || p.pinned === 'true' }));
     blogPosts.sort((a, b) => {
         if (a.pinned && !b.pinned) return -1;
@@ -69,11 +71,11 @@ export async function onRequest({ env, request }) {
         return `<a href="/?tab=blog&tag=${encodeURIComponent(tag)}" style="display:inline-block;margin:4px;padding:4px 12px;background:#f0f0f0;border-radius:20px;text-decoration:none;color:#667eea;font-size:${size}px">${escapeHtml(tag)}(${count})</a>`;
     }).join('');
     
-let blogListHtml = blogPosts.map(post => {
-    const views = viewsMap.get(post.id) || 0;
-    // 置顶标识已移除，不显示
-    return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : ''}</div></div>`;
-}).join('');
+    let blogListHtml = blogPosts.map(post => {
+        const views = viewsMap.get(post.id) || 0;
+        const coverHtml = post.coverImage ? `<img src="${escapeHtml(post.coverImage)}" style="width:100px;height:80px;object-fit:cover;border-radius:8px">` : '';
+        return `<div class="blog-card" onclick="location.href='/post/${post.slug}'"><div style="display:flex;justify-content:space-between"><div><h3>${escapeHtml(post.title)}</h3><div style="display:flex;gap:16px;margin:8px 0;font-size:12px;color:#a0aec0"><span>📅 ${new Date(post.createdAt).toLocaleDateString()}</span><span>🏷️ ${escapeHtml(post.category || '未分类')}</span><span>👁️ ${views}阅读</span></div><p>${escapeHtml(post.excerpt || (post.content || '').substring(0, 100).replace(/<[^>]*>/g, ''))}...</p></div>${coverHtml}</div></div>`;
+    }).join('');
     if (!blogListHtml) blogListHtml = '<div style="text-align:center;padding:60px">暂无文章</div>';
     
     const hotPosts = [...blogPosts].sort((a, b) => (viewsMap.get(b.id) || 0) - (viewsMap.get(a.id) || 0)).slice(0, 5);
@@ -147,16 +149,17 @@ let blogListHtml = blogPosts.map(post => {
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">${logoHtml}</div>
         <div class="sidebar-nav">
-            <a href="/?tab=blog" style="display:block;padding:10px;background:#e2e8f0;border-radius:8px;text-align:center;margin-bottom:15px;text-decoration:none;color:#667eea;font-weight:600">📝 内容列表</a>
+            <a href="/?tab=blog" style="display:block;padding:10px;background:#e2e8f0;border-radius:8px;text-align:center;margin-bottom:15px;text-decoration:none;color:#667eea;font-weight:600">📝 博客列表</a>
             <div style="font-weight:600;margin:15px 0 10px">📁 书签分类</div>
-            ${catNavHtml || '<div>待添加</div>'}
+            ${catNavHtml || '<div>暂无分类</div>'}
             <div style="font-weight:600;margin:20px 0 10px">🔥 热门文章</div>
-            ${hotPostsHtml || '<div>待添加</div>'}
+            ${hotPostsHtml || '<div>暂无</div>'}
             <div style="margin-top:20px;padding-top:15px;border-top:1px solid #e2e8f0"><a href="/admin" style="display:block;padding:10px;background:#edf2f7;border-radius:8px;text-align:center;text-decoration:none">⚙️ 后台管理</a></div>
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0"><a href="/api/images" style="display:block;padding:10px;background:#edf2f7;border-radius:8px;text-align:center;text-decoration:none">🖼️ 图片管理</a></div>
         </div>
     </div>
     <div class="main">
-        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航可自定义')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">🇨🇳 国外服务器</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客可自定义')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
+        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">🇨🇳 国内线路</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
         <div class="content">
             <div class="content-header"><h2>${title}</h2><div class="tab-buttons"><button class="tab-btn ${currentTab === 'blog' ? 'active' : ''}" data-tab="blog">📝 博客</button><button class="tab-btn ${currentTab === 'bookmark' ? 'active' : ''}" data-tab="bookmark">🔖 书签</button></div></div>
             <div id="blog-view" style="display:${currentTab === 'blog' ? 'block' : 'none'}">
@@ -181,13 +184,13 @@ let blogListHtml = blogPosts.map(post => {
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-async function getSites(env) { try { const d = await NAV_KV.get('sites'); return d ? JSON.parse(d) : []; } catch { return []; } }
-async function getBlogPosts(env) { try { const d = await NAV_KV.get('blog_posts'); return d ? JSON.parse(d) : []; } catch { return []; } }
-async function getLogo(env) { try { return await NAV_KV.get('site_logo') || ''; } catch { return ''; } }
-async function getLogoLink(env) { try { return await NAV_KV.get('site_logo_link') || ''; } catch { return ''; } }
-async function getHeaderBg(env) { try { return await NAV_KV.get('header_bg') || ''; } catch { return ''; } }
-async function getSiteTitle(env) { try { return await NAV_KV.get('site_title') || ''; } catch { return ''; } }
-async function getSiteSubtitle(env) { try { return await NAV_KV.get('site_subtitle') || ''; } catch { return ''; } }
-async function getCnLink(env) { try { return await NAV_KV.get('cn_link') || ''; } catch { return ''; } }
+async function getSites() { try { const d = await NAV_KV.get('sites'); return d ? JSON.parse(d) : []; } catch { return []; } }
+async function getBlogPosts() { try { const d = await NAV_KV.get('blog_posts'); return d ? JSON.parse(d) : []; } catch { return []; } }
+async function getLogo() { try { return await NAV_KV.get('site_logo') || ''; } catch { return ''; } }
+async function getLogoLink() { try { return await NAV_KV.get('site_logo_link') || ''; } catch { return ''; } }
+async function getHeaderBg() { try { return await NAV_KV.get('header_bg') || ''; } catch { return ''; } }
+async function getSiteTitle() { try { return await NAV_KV.get('site_title') || ''; } catch { return ''; } }
+async function getSiteSubtitle() { try { return await NAV_KV.get('site_subtitle') || ''; } catch { return ''; } }
+async function getCnLink() { try { return await NAV_KV.get('cn_link') || ''; } catch { return ''; } }
 function escapeHtml(s) { if(!s) return ''; return String(s).replace(/[&<>]/g,m=>m==='&'?'&amp;':m==='<'?'&lt;':'&gt;'); }
 function sanitizeUrl(u) { if(!u) return ''; let s=String(u).trim(); if(!s.startsWith('http')) s='https://'+s; return s; }
