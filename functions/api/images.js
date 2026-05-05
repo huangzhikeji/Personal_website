@@ -1,4 +1,4 @@
-// functions/api/images.js
+// functions/api/images.js - 实时扫描版本
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -24,17 +24,8 @@ export async function onRequest({ request, env }) {
             const ext = file.type.split('/')[1] || 'jpg';
             const filename = Date.now() + '.' + ext;
             
-            // 保存图片到 KV
+            // 保存图片
             await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
-            
-            // 更新图片列表
-            let imageList = [];
-            const existingList = await NAV_KV.get('image_urls');
-            if (existingList) {
-                try { imageList = JSON.parse(existingList); } catch(e) {}
-            }
-            imageList.unshift({ filename: filename, url: '/api/image/' + filename });
-            await NAV_KV.put('image_urls', JSON.stringify(imageList));
             
             return new Response(JSON.stringify({ code: 200, url: '/api/image/' + filename }), {
                 headers: { 'Content-Type': 'application/json' }
@@ -54,13 +45,6 @@ export async function onRequest({ request, env }) {
             
             await NAV_KV.delete('img:' + filename);
             
-            const existingList = await NAV_KV.get('image_urls');
-            if (existingList) {
-                let imageList = JSON.parse(existingList);
-                imageList = imageList.filter(img => img.filename !== filename);
-                await NAV_KV.put('image_urls', JSON.stringify(imageList));
-            }
-            
             return new Response(JSON.stringify({ code: 200 }), {
                 headers: { 'Content-Type': 'application/json' }
             });
@@ -71,11 +55,21 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 获取图片列表
+    // 获取图片列表 - 实时扫描 KV
     if (request.method === 'GET' && url.searchParams.get('list') === '1') {
         try {
-            const existingList = await NAV_KV.get('image_urls');
-            let images = existingList ? JSON.parse(existingList) : [];
+            const keys = await NAV_KV.list({ prefix: 'img:' });
+            const images = [];
+            if (keys && keys.keys) {
+                for (const key of keys.keys) {
+                    let filename = key.name;
+                    if (filename.startsWith('img:')) {
+                        filename = filename.substring(4);
+                    }
+                    images.push({ filename: filename, url: '/api/image/' + filename });
+                }
+            }
+            images.sort((a, b) => b.filename.localeCompare(a.filename));
             return new Response(JSON.stringify({ code: 200, data: images }), {
                 headers: { 'Content-Type': 'application/json' }
             });
