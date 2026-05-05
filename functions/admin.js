@@ -136,9 +136,6 @@ export async function onRequest({ request, env }) {
         #quill-editor-wrap .ql-container{border-radius:0 0 8px 8px;border-color:#e2e8f0;min-height:280px;font-size:15px}
         #quill-editor-wrap .ql-editor{min-height:280px;line-height:1.7}
         #quill-editor-wrap .ql-editor img{max-width:100%;margin:8px 0}
-        .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:15px}
-        .image-card{background:#f8fafc;border-radius:10px;padding:12px;border:1px solid #e2e8f0}
-        .image-card img{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:10px;background:#f0f0f0}
     </style>
 </head>
 <body>
@@ -246,24 +243,6 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
-<!-- 图片管理卡片 -->
-<div class="card">
-    <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>🖼️ KV 图片管理</span>
-        <div>
-            <button id="refreshImagesBtn" style="background:#667eea; color:white; padding:4px 12px; font-size:12px;">🔄 刷新</button>
-            <button id="clearAllImagesBtn" style="background:#e53e3e; color:white; padding:4px 12px; font-size:12px; margin-left:8px;">🗑️ 清空所有</button>
-        </div>
-    </div>
-    <div style="margin-bottom: 10px;">
-        <span id="imageStats" style="font-size: 13px; color: #718096;"></span>
-        <span style="font-size: 13px; color: #718096; margin-left: 15px;">💡 提示：复制图片链接后，粘贴到文章「封面图 URL」即可</span>
-    </div>
-    <div id="imageList" style="max-height: 400px; overflow-y: auto; min-height: 150px;">
-        <div style="text-align: center; padding: 40px; color: #999;">点击刷新加载图片列表</div>
-    </div>
-</div>
-
 <!-- 文章编辑弹窗 -->
 <div id="postModal" class="modal">
     <div class="blog-modal-content">
@@ -274,7 +253,7 @@ export async function onRequest({ request, env }) {
             <div class="form-group"><label>分类</label><input type="text" id="postCategory" placeholder="未分类"></div>
             <div class="form-group"><label>状态</label><select id="postStatus"><option value="published">发布</option><option value="draft">草稿</option></select></div>
         </div>
-        <div class="form-group"><label>封面图 URL</label><input type="url" id="postCoverImage" placeholder="https://... 或 /api/image/xxx.jpg"></div>
+        <div class="form-group"><label>封面图 URL</label><input type="url" id="postCoverImage" placeholder="https://..."></div>
         <div class="form-group"><label>摘要</label><textarea id="postExcerpt" rows="2" placeholder="可选"></textarea></div>
         <div class="form-group"><label>内容 *</label></div>
         <div id="quill-editor-wrap"><div id="quill-editor"></div></div>
@@ -653,9 +632,7 @@ function initQuill() {
             const range = quill.getSelection(true);
             quill.insertEmbed(range.index, 'image', d.url);
             quill.setSelection(range.index + 1);
-            // 刷新图片列表
-            setTimeout(() => { if (typeof loadImages === 'function') loadImages(); }, 500);
-        } else { alert('上传失败：' + (d.message || '未知错误')); }
+        } else { alert('上传失败'); }
         e.target.value = '';
     };
     quill.on('text-change', () => {
@@ -836,129 +813,6 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
     }
 });
 
-// ========== KV 图片管理 ==========
-async function loadImages() {
-    const container = document.getElementById('imageList');
-    const stats = document.getElementById('imageStats');
-    
-    if (!container) return;
-    
-    container.innerHTML = '<div style="text-align: center; padding: 40px;">加载中...</div>';
-    
-    try {
-        const res = await fetch('/api/admin/images', {
-            credentials: 'include'
-        });
-        const data = await res.json();
-        
-        if (data.code === 200 && data.data.length > 0) {
-            stats.textContent = `📸 共 ${data.total} 张图片`;
-            
-            let html = '<div class="image-grid">';
-            
-            for (const img of data.data) {
-                const displayName = img.filename.length > 25 ? img.filename.substring(0, 22) + '...' : img.filename;
-                html += `
-                    <div class="image-card">
-                        <img src="${escapeHtml(img.url)}" 
-                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Crect width=%22100%22 height=%22100%22 fill=%22%23f0f0f0%22/%3E%3Ctext x=%2250%22 y=%2250%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%23999%22%3E❌ 加载失败%3C/text%3E%3C/svg%3E'">
-                        <div style="font-size: 11px; margin-bottom: 10px; word-break: break-all; color: #4a5568;" title="${escapeHtml(img.filename)}">
-                            📄 ${escapeHtml(displayName)}
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button class="copy-img-url" data-url="${escapeHtml(img.url)}" style="flex: 1; background: #667eea; color: white; border: none; padding: 6px; border-radius: 6px; cursor: pointer; font-size: 11px;">📋 复制链接</button>
-                            <button class="delete-img" data-filename="${escapeHtml(img.filename)}" style="background: #e53e3e; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 11px;">🗑️</button>
-                        </div>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            container.innerHTML = html;
-            
-            // 绑定复制按钮事件
-            document.querySelectorAll('.copy-img-url').forEach(btn => {
-                btn.onclick = async (e) => {
-                    e.preventDefault();
-                    const url = btn.dataset.url;
-                    await navigator.clipboard.writeText(url);
-                    const originalText = btn.textContent;
-                    btn.textContent = '✓ 已复制';
-                    setTimeout(() => btn.textContent = originalText, 2000);
-                };
-            });
-            
-            // 绑定删除按钮事件
-            document.querySelectorAll('.delete-img').forEach(btn => {
-                btn.onclick = async (e) => {
-                    e.preventDefault();
-                    const filename = btn.dataset.filename;
-                    if (!confirm(`确定要删除图片 "${filename}" 吗？\n\n⚠️ 删除后文章中的图片将无法显示！`)) return;
-                    
-                    const res = await fetch('/api/admin/images', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ filename }),
-                        credentials: 'include'
-                    });
-                    const data = await res.json();
-                    if (data.code === 200) {
-                        showMessage('✅ 删除成功', 'success');
-                        loadImages();
-                    } else {
-                        showMessage('❌ 删除失败: ' + data.message, 'error');
-                    }
-                };
-            });
-        } else {
-            container.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">📭 暂无图片，上传文章图片后会显示在这里</div>';
-            stats.textContent = '📸 共 0 张图片';
-        }
-    } catch (e) {
-        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #e53e3e;">❌ 加载失败: ' + e.message + '</div>';
-        stats.textContent = '加载失败';
-    }
-}
-
-// 清空所有图片
-if (document.getElementById('clearAllImagesBtn')) {
-    document.getElementById('clearAllImagesBtn').onclick = async () => {
-        if (!confirm('⚠️ 警告：这将删除 KV 中所有图片！\n\n删除后文章中的图片将无法显示。\n\n确定要继续吗？')) return;
-        
-        const res = await fetch('/api/admin/images', { credentials: 'include' });
-        const data = await res.json();
-        
-        if (data.code === 200 && data.data.length > 0) {
-            let deleted = 0;
-            let failed = 0;
-            
-            for (const img of data.data) {
-                const delRes = await fetch('/api/admin/images', {
-                    method: 'DELETE',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ filename: img.filename }),
-                    credentials: 'include'
-                });
-                const delData = await delRes.json();
-                if (delData.code === 200) deleted++;
-                else failed++;
-            }
-            
-            showMessage(`清空完成：成功 ${deleted} 张，失败 ${failed} 张`, deleted > 0 ? 'success' : 'error');
-            loadImages();
-        } else {
-            showMessage('没有图片需要清空', 'error');
-        }
-    };
-}
-
-// 刷新图片列表
-if (document.getElementById('refreshImagesBtn')) {
-    document.getElementById('refreshImagesBtn').onclick = () => {
-        loadImages();
-        showMessage('正在刷新图片列表...', 'success');
-    };
-}
-
 // 初始化加载
 loadLogo();
 loadSiteInfo();
@@ -966,10 +820,6 @@ loadLogoLink();
 loadHeaderBg();
 loadSites();
 loadBlogPosts();
-// 延迟加载图片列表
-setTimeout(() => {
-    if (typeof loadImages === 'function') loadImages();
-}, 500);
 </script>
 </body>
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
