@@ -1,4 +1,3 @@
-// 独立的图片管理 API - 不影响任何现有功能
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -17,6 +16,7 @@ export async function onRequest({ request, env }) {
     }
     
     const method = request.method;
+    const url = new URL(request.url);
     
     // GET - 获取图片列表
     if (method === 'GET') {
@@ -24,13 +24,18 @@ export async function onRequest({ request, env }) {
             const keys = await NAV_KV.list({ prefix: 'img:' });
             const images = [];
             
-            for (const key of keys.keys) {
-                const filename = key.name.replace('img:', '');
-                images.push({
-                    filename: filename,
-                    url: `/api/image/${filename}`,
-                    size: key.metadata?.size || 0
-                });
+            if (keys && keys.keys) {
+                for (const key of keys.keys) {
+                    // 从 key.name 中提取文件名
+                    let filename = key.name;
+                    if (filename.startsWith('img:')) {
+                        filename = filename.substring(4);
+                    }
+                    images.push({
+                        filename: filename,
+                        url: `/api/image/${filename}`
+                    });
+                }
             }
             
             // 按文件名倒序（最新的在前）
@@ -40,7 +45,7 @@ export async function onRequest({ request, env }) {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
-            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+            return new Response(JSON.stringify({ code: 500, message: '获取图片列表失败: ' + e.message }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
@@ -51,19 +56,22 @@ export async function onRequest({ request, env }) {
         try {
             const body = await request.json();
             const filename = body.filename;
+            
             if (!filename) {
-                return new Response(JSON.stringify({ code: 400, message: '缺少文件名' }), {
+                return new Response(JSON.stringify({ code: 400, message: '缺少文件名参数' }), {
                     headers: { 'Content-Type': 'application/json' }
                 });
             }
             
-            await NAV_KV.delete(`img:${filename}`);
+            // 确保 key 格式正确
+            const key = filename.startsWith('img:') ? filename : `img:${filename}`;
+            await NAV_KV.delete(key);
             
             return new Response(JSON.stringify({ code: 200, message: '删除成功' }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
-            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+            return new Response(JSON.stringify({ code: 500, message: '删除失败: ' + e.message }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
