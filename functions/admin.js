@@ -85,7 +85,6 @@ export async function onRequest({ request, env }) {
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
-    // 已登录显示完整后台
     return new Response(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -177,24 +176,36 @@ export async function onRequest({ request, env }) {
         <div class="card-title">🖼️ Logo 设置</div>
         <div class="logo-section">
             <div class="logo-preview"><img id="logoPreview" style="display:none"><span id="noLogoHint">暂未设置 Logo</span></div>
-            <div class="logo-input-row"><input type="text" id="logoInput" placeholder="Logo 图片 URL（或点击上传）"><button id="uploadLogoBtn" class="btn-warning">📁 上传</button><button id="saveLogoBtn" class="btn-success">保存</button><button id="deleteLogoBtn" class="btn-danger">🗑️ 删除</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="logoInput" placeholder="Logo 图片 URL（或点击上传）">
+                <button id="uploadLogoBtn" class="btn-warning">📁 上传</button>
+                <button id="saveLogoBtn" class="btn-success">保存</button>
+                <button id="deleteLogoBtn" class="btn-danger">🗑️ 删除</button>
+            </div>
             <input type="file" id="logoFileInput" accept="image/*" style="display:none">
-            <div class="logo-input-row"><input type="text" id="logoLinkInput" placeholder="Logo 点击跳转链接（可留空）"><button id="saveLogoLinkBtn" class="btn-success">保存</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="logoLinkInput" placeholder="Logo 点击跳转链接（可留空）">
+                <button id="saveLogoLinkBtn" class="btn-success">保存</button>
+            </div>
         </div>
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid #e2e8f0">
             <div style="font-size:13px;font-weight:600;color:#4a5568;margin-bottom:10px">🖼️ 页眉背景图</div>
             <div id="headerBgPreviewWrap" style="display:none;margin-bottom:10px"><img id="headerBgPreview" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0"></div>
-            <div class="logo-input-row"><input type="text" id="headerBgInput" placeholder="背景图 URL（留空恢复默认渐变）"><button id="uploadHeaderBgBtn" class="btn-warning">📁 上传</button><button id="saveHeaderBgBtn" class="btn-success">保存</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="headerBgInput" placeholder="背景图 URL（留空恢复默认渐变）">
+                <button id="uploadHeaderBgBtn" class="btn-warning">📁 上传</button>
+                <button id="saveHeaderBgBtn" class="btn-success">保存</button>
+            </div>
             <input type="file" id="headerBgFileInput" accept="image/*" style="display:none">
             <small style="color:#a0aec0">留空并保存可恢复默认紫色渐变背景</small>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">🌐 站点信息</div>
-        <div class="form-group"><label for="siteTitleInput">站点标题</label><input type="text" id="siteTitleInput" placeholder="旭儿导航" maxlength="50"></div>
-        <div class="form-group"><label for="siteSubtitleInput">站点副标题</label><input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100"></div>
-        <div class="form-group"><label for="cnLinkInput">🇨🇳 国内线路链接</label><input type="url" id="cnLinkInput" placeholder="https://你的国内备用域名.com"></div>
+        <div class="card-title">🌐 站点设置</div>
+        <div class="form-group"><label>站点标题</label><input type="text" id="siteTitleInput" placeholder="旭儿导航" maxlength="50"></div>
+        <div class="form-group"><label>站点副标题</label><input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100"></div>
+        <div class="form-group"><label>🇨🇳 国内线路链接</label><input type="url" id="cnLinkInput" placeholder="https://你的国内备用域名.com"><small style="color:#a0aec0">填写后首页标题旁会显示按钮</small></div>
         <button id="saveSiteInfoBtn" class="btn-primary">💾 保存站点信息</button>
         <span id="siteInfoStatus" style="margin-left:10px;font-size:13px;"></span>
     </div>
@@ -213,6 +224,7 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
+<!-- 文章编辑弹窗 -->
 <div id="postModal" class="modal">
     <div class="blog-modal-content">
         <div class="modal-header"><h3 id="postModalTitle">写新文章</h3><span class="close-post-modal" style="font-size:22px;cursor:pointer;color:#a0aec0">&times;</span></div>
@@ -222,19 +234,23 @@ export async function onRequest({ request, env }) {
             <div class="form-group"><label>分类</label><input type="text" id="postCategory" placeholder="未分类"></div>
             <div class="form-group"><label>状态</label><select id="postStatus"><option value="published">发布</option><option value="draft">草稿</option></select></div>
         </div>
-        <div class="form-group"><label>封面图 URL</label><input type="url" id="postCoverImage" placeholder="https://..."></div>
+        <div class="form-group"><label>封面图 URL</label><input type="url" id="postCoverImage" placeholder="https://... 或 /api/image/xxx.jpg"></div>
         <div class="form-group"><label>摘要</label><textarea id="postExcerpt" rows="2" placeholder="可选"></textarea></div>
         <div class="form-group"><label>内容 *</label></div>
         <div id="quill-editor-wrap"><div id="quill-editor"></div></div>
         <textarea id="postContent" style="display:none"></textarea>
         <div class="form-group"><label>标签</label><input type="text" id="postTags" placeholder="技术,生活"></div>
-        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px"><input type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b"><label for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">📌 置顶文章 <small style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）</small></label></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px">
+            <input type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b">
+            <label for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">📌 置顶文章 <small style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）</small></label>
+        </div>
         <div class="form-actions"><button type="button" id="cancelPostBtn" class="btn-secondary">取消</button><button type="button" id="savePostBtn" class="btn-success">保存</button></div>
     </div>
 </div>
 
 <input type="file" id="blogFileInput" accept="image/*" style="display:none">
 
+<!-- 编辑书签弹窗 -->
 <div id="editModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3>✏️ 编辑书签</h3><span class="close-modal">&times;</span></div>
@@ -251,6 +267,7 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
+<!-- 修改密码弹窗 -->
 <div id="changePwdModal" class="modal">
     <div class="modal-content">
         <div class="modal-header"><h3>🔑 修改密码</h3><span class="close-pwd-modal">&times;</span></div>
@@ -282,14 +299,19 @@ function escapeHtml(str) {
     });
 }
 
+// Logo 和背景图管理
 async function loadLogo() {
     const res = await fetch('/api/logo');
     const data = await res.json();
-    if (data.code === 200 && data.logo) {
-        document.getElementById('logoPreview').src = data.logo;
-        document.getElementById('logoPreview').style.display = 'block';
+    const logoUrl = data.logo || '/img/logo.png';
+    const logoPreview = document.getElementById('logoPreview');
+    if (logoPreview) {
+        logoPreview.src = logoUrl;
+        logoPreview.style.display = 'block';
         document.getElementById('noLogoHint').style.display = 'none';
     }
+    const logoInput = document.getElementById('logoInput');
+    if (logoInput) logoInput.value = logoUrl;
 }
 
 async function loadLogoLink() {
@@ -307,6 +329,10 @@ async function loadHeaderBg() {
         document.getElementById('headerBgInput').value = data.bg;
         document.getElementById('headerBgPreview').src = data.bg;
         document.getElementById('headerBgPreviewWrap').style.display = 'block';
+    } else {
+        document.getElementById('headerBgInput').value = '/img/bg.jpg';
+        document.getElementById('headerBgPreview').src = '/img/bg.jpg';
+        document.getElementById('headerBgPreviewWrap').style.display = 'block';
     }
 }
 
@@ -316,7 +342,7 @@ document.getElementById('headerBgFileInput').onchange = async (e) => {
     if (!f) return;
     const fd = new FormData();
     fd.append('image', f);
-    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
     const d = await r.json();
     if (d.code === 200) {
         document.getElementById('headerBgInput').value = d.url;
@@ -341,7 +367,8 @@ document.getElementById('saveHeaderBgBtn').onclick = async () => {
             document.getElementById('headerBgPreview').src = bg;
             document.getElementById('headerBgPreviewWrap').style.display = 'block';
         } else {
-            document.getElementById('headerBgPreviewWrap').style.display = 'none';
+            document.getElementById('headerBgPreview').src = '/img/bg.jpg';
+            document.getElementById('headerBgPreviewWrap').style.display = 'block';
         }
     } else { showMessage('保存失败', 'error'); }
 };
@@ -352,7 +379,7 @@ document.getElementById('logoFileInput').onchange = async (e) => {
     if (!f) return;
     const fd = new FormData();
     fd.append('image', f);
-    const r = await fetch('/api/upload', { method: 'POST', body: fd });
+    const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
     const d = await r.json();
     if (d.code === 200) {
         document.getElementById('logoInput').value = d.url;
@@ -375,8 +402,9 @@ document.getElementById('saveLogoBtn').onclick = async () => {
             document.getElementById('logoPreview').style.display = 'block';
             document.getElementById('noLogoHint').style.display = 'none';
         } else {
-            document.getElementById('logoPreview').style.display = 'none';
-            document.getElementById('noLogoHint').style.display = 'inline';
+            document.getElementById('logoPreview').src = '/img/logo.png';
+            document.getElementById('logoPreview').style.display = 'block';
+            document.getElementById('noLogoHint').style.display = 'none';
         }
     } else { showMessage('保存失败', 'error'); }
 };
@@ -387,9 +415,10 @@ document.getElementById('deleteLogoBtn').onclick = async () => {
     const res = await fetch('/api/logo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logo: '' }) });
     const data = await res.json();
     if (data.code === 200) {
-        document.getElementById('logoPreview').style.display = 'none';
-        document.getElementById('noLogoHint').style.display = 'inline';
-        showMessage('Logo 已删除', 'success');
+        document.getElementById('logoPreview').src = '/img/logo.png';
+        document.getElementById('logoPreview').style.display = 'block';
+        document.getElementById('noLogoHint').style.display = 'none';
+        showMessage('Logo 已恢复默认', 'success');
     } else { showMessage('删除失败', 'error'); }
 };
 
@@ -401,6 +430,7 @@ document.getElementById('saveLogoLinkBtn').onclick = async () => {
     else { showMessage('保存失败', 'error'); }
 };
 
+// 书签管理
 async function loadSites() {
     const res = await fetch('/api/config');
     const data = await res.json();
@@ -486,11 +516,13 @@ document.getElementById('editForm').onsubmit = async (e) => {
     else showMessage('修改失败', 'error');
 };
 
+// 退出登录
 document.getElementById('logoutBtn').onclick = async () => {
     await fetch('/logout', { method: 'POST' });
     window.location.href = '/';
 };
 
+// 修改密码
 const changePwdModal = document.getElementById('changePwdModal');
 function openChangePwdModal() { changePwdModal.style.display = 'flex'; }
 function closeChangePwdModal() { changePwdModal.style.display = 'none'; }
@@ -527,16 +559,10 @@ window.onclick = (e) => {
 document.querySelector('.close-modal').onclick = closeModal;
 document.querySelector('.close-modal-btn').onclick = closeModal;
 
-loadLogo();
-loadSiteInfo();
-loadLogoLink();
-loadHeaderBg();
-loadSites();
-loadBlogPosts();
-
+// 博客管理
 let allPosts = [];
-
 let quill = null;
+
 function initQuill() {
     if (quill) return;
     quill = new Quill('#quill-editor', {
@@ -580,7 +606,7 @@ function initQuill() {
         if (!f) return;
         const fd = new FormData();
         fd.append('image', f);
-        const r = await fetch('/api/upload', { method: 'POST', body: fd });
+        const r = await fetch('/api/upload', { method: 'POST', body: fd, credentials: 'include' });
         const d = await r.json();
         if (d.code === 200) {
             const range = quill.getSelection(true);
@@ -609,19 +635,32 @@ function renderBlogList() {
         if (a.pinned && !b.pinned) return -1;
         return b.id - a.id;
     });
-    if (!fl.length) { document.getElementById('blogList').innerHTML = '<p style="color:#a0aec0;padding:20px 0">暂无文章</p>'; return; }
+    if (!fl.length) { 
+        document.getElementById('blogList').innerHTML = '<p style="color:#a0aec0;padding:20px 0">暂无文章</p>'; 
+        return; 
+    }
     let h = '<table><thead><tr><th>ID</th><th>标题</th><th>分类</th><th>状态</th><th>日期</th><th>操作</th></tr></thead><tbody>';
-    fl.forEach(p => {
-        const badge = p.status === 'published'
-            ? '<span class="status-badge status-published">已发布</span>'
-            : '<span class="status-badge status-draft">草稿</span>';
+    for (const p of fl) {
+        const badge = p.status === 'published' ? '<span style="color:#38a169">已发布</span>' : '<span style="color:#ed8936">草稿</span>';
         const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('zh-CN') : '-';
-        h += '<tr><td>' + p.id + '</td><td><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge">📌 置顶</span>' : '') + '</td><td>' + escapeHtml(p.category || '未分类') + '</td><td>' + badge + '</td><td>' + date + '</td><td class="actions"><button class="btn-warning blog-edit" data-id="' + p.id + '">编辑</button><button class="btn-danger blog-del" data-id="' + p.id + '">删除</button></td></tr>';
-    });
+        h += `<tr>
+            <td>${p.id}</td>
+            <td><strong>${escapeHtml(p.title)}</strong>${p.pinned ? ' <span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:12px;font-size:11px">📌置顶</span>' : ''}</td>
+            <td>${escapeHtml(p.category || '未分类')}</td>
+            <td>${badge}</td>
+            <td>${date}</td>
+            <td><button class="blog-edit" data-id="${p.id}" style="background:#ed8936;color:white;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;margin-right:8px">编辑</button><button class="blog-del" data-id="${p.id}" style="background:#e53e3e;color:white;border:none;padding:4px 12px;border-radius:6px;cursor:pointer">删除</button></td>
+        </tr>`;
+    }
     h += '</tbody></table>';
     document.getElementById('blogList').innerHTML = h;
-    document.querySelectorAll('.blog-edit').forEach(b => b.onclick = () => openPostModal(b.dataset.id));
-    document.querySelectorAll('.blog-del').forEach(b => b.onclick = () => deleteBlogPost(b.dataset.id));
+    
+    document.querySelectorAll('.blog-edit').forEach(btn => {
+        btn.onclick = () => openPostModal(parseInt(btn.dataset.id));
+    });
+    document.querySelectorAll('.blog-del').forEach(btn => {
+        btn.onclick = () => deleteBlogPost(parseInt(btn.dataset.id));
+    });
 }
 
 function openPostModal(id) {
@@ -696,11 +735,11 @@ document.getElementById('savePostBtn').onclick = async () => {
 
 document.getElementById('blogSearchInput').addEventListener('input', renderBlogList);
 document.getElementById('blogStatusFilter').addEventListener('change', renderBlogList);
-
 document.getElementById('postModal').addEventListener('click', e => {
     if (e.target === document.getElementById('postModal')) closePostModal();
 });
 
+// 站点信息
 async function loadSiteInfo() {
     try {
         const res = await fetch('/api/site-info');
@@ -743,6 +782,14 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
         setTimeout(() => { status.textContent = ''; }, 3000);
     }
 });
+
+// 初始化
+loadLogo();
+loadSiteInfo();
+loadLogoLink();
+loadHeaderBg();
+loadSites();
+loadBlogPosts();
 </script>
 </body>
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
