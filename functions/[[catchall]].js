@@ -1,5 +1,4 @@
-export async function onRequest() {
-    return new Response('Hello World', {
-        headers: { 'Content-Type': 'text/plain' }
-    });
+// functions/[[catchall]].js
+export function onRequest() {
+    return new Response("OK");
 }
