@@ -4,109 +4,82 @@
 
 ---
 
-## 📁 完整文件结构及功能说明
-
-项目根目录/
+旭儿导航 (EdgeOne Pages)
 │
-├── .edgeone/ # EdgeOne Pages 配置目录
-│ └── functions.json # 路由配置文件，将所有 URL 路径映射到对应的云函数
+├── 📁 根目录配置文件
+│   ├── .edgeone/functions.json     # 路由映射配置
+│   ├── _routes.json                # 路由规则
+│   └── README.md                   # 说明文档
 │
-├── functions/ # 云函数目录（所有后端逻辑）
-│ │
-│ ├── index.js # 入口文件，重导出 [[catchall]].js
-│ │
-│ ├── [[catchall]].js # 🌟 主入口文件（核心）
-│ │ └── 功能：首页渲染、书签卡片、博客列表、标签云、侧边栏、热门文章、国内线路按钮
-│ │
-│ ├── _middleware.js # 全局中间件
-│ │ └── 功能：处理退出登录、放行静态资源和 API 请求
-│ │
-│ ├── admin.js # 后台管理页面
-│ │ └── 功能：管理员登录、文章管理（发布/编辑/删除）、书签管理（添加/编辑/删除）、
-│ │ 站点设置（标题/副标题/Logo/背景图）、修改密码
-│ │
-│ ├── logout.js # 退出登录处理
-│ │ └── 功能：清除 session 和 Cookie，跳转首页
-│ │
-│ ├── post/ # 文章详情页目录
-│ │ └── [[slug]].js # 文章详情页（基于 slug 路由）
-│ │ └── 功能：显示文章完整内容、阅读量统计、相关文章推荐、目录生成
-│ │
-│ └── api/ # API 接口目录
-│ │
-│ ├── blog.js # 文章集合 API
-│ │ └── 功能：GET /api/blog（获取文章列表）、POST /api/blog（发布文章）
-│ │
-│ ├── blog/ # 单篇文章 API 目录
-│ │ └── [[id]].js # 单篇文章操作 API
-│ │ └── 功能：GET /api/blog/:id（获取单篇文章）、
-│ │ PUT /api/blog/:id（更新文章）、
-│ │ DELETE /api/blog/:id（删除文章）
-│ │
-│ ├── config.js # 书签集合 API
-│ │ └── 功能：GET /api/config（获取书签列表）、POST /api/config（添加书签）
-│ │
-│ ├── config/ # 单个书签 API 目录
-│ │ └── [id].js # 单本书签操作 API
-│ │ └── 功能：PUT /api/config/:id（更新书签）、DELETE /api/config/:id（删除书签）
-│ │
-│ ├── change-password.js # 修改密码 API
-│ │ └── 功能：POST /api/change-password（验证原密码并更新新密码）
-│ │
-│ ├── header-bg.js # 页眉背景图 API
-│ │ └── 功能：GET /api/header-bg（获取背景图 URL）、
-│ │ POST /api/header-bg（保存背景图 URL）
-│ │
-│ ├── image/ # 图片访问目录
-│ │ └── [filename].js # 图片获取 API
-│ │ └── 功能：GET /api/image/:filename（从 KV 读取图片并返回）
-│ │
-│ ├── logo.js # Logo API
-│ │ └── 功能：GET /api/logo（获取 Logo URL）、POST /api/logo（保存 Logo URL）
-│ │
-│ ├── logo-link.js # Logo 跳转链接 API
-│ │ └── 功能：GET /api/logo-link（获取跳转链接）、
-│ │ POST /api/logo-link（保存跳转链接）
-│ │
-│ ├── search.js # 文章搜索 API
-│ │ └── 功能：GET /api/search?q=关键词（全文搜索已发布文章）
-│ │
-│ ├── site-info.js # 站点信息 API
-│ │ └── 功能：GET /api/site-info（获取站点标题/副标题/国内线路链接）、
-│ │ POST /api/site-info（保存站点信息）
-│ │
-│ ├── sitemap.js # 站点地图 API
-│ │ └── 功能：GET /api/sitemap（自动生成 XML 格式站点地图）
-│ │
-│ ├── stats.js # 统计信息 API
-│ │ └── 功能：GET /api/stats（返回文章数、总阅读量、标签/分类分布）
-│ │
-│ └── upload.js # 图片上传 API
-│ └── 功能：POST /api/upload（上传图片到 KV，返回图片 URL）
+├── 📁 functions/                   # 云函数目录
+│   │
+│   ├── index.js                    # 入口文件（重定向到 [[catchall]]）
+│   │
+│   ├── [[catchall]].js             # 🌟 主入口（首页、侧边栏、书签卡片、博客列表、标签云、热门文章）
+│   │
+│   ├── _middleware.js              # 中间件（处理退出登录、静态资源）
+│   │
+│   ├── admin.js                    # 🔧 后台管理（文章CRUD、书签CRUD、站点设置、Logo设置、修改密码）
+│   │
+│   ├── logout.js                   # 退出登录（清除session和Cookie）
+│   │
+│   ├── 📁 post/                    # 文章详情
+│   │   └── [[slug]].js             # 📄 文章详情页（显示完整文章、阅读量、相关文章、目录）
+│   │
+│   └── 📁 api/                     # API接口目录
+│       │
+│       ├── blog.js                 # 📝 文章集合API（GET列表、POST发布）
+│       │
+│       ├── blog/[[id]].js          # 📝 单篇文章API（GET、PUT、DELETE）
+│       │
+│       ├── config.js               # 🔖 书签集合API（GET列表、POST添加）
+│       │
+│       ├── config/[id].js          # 🔖 单本书签API（PUT更新、DELETE删除）
+│       │
+│       ├── change-password.js      # 🔑 修改密码API
+│       │
+│       ├── header-bg.js            # 🖼️ 页眉背景图API
+│       │
+│       ├── image/[filename].js     # 🖼️ 图片获取API（从KV读取）
+│       │
+│       ├── logo.js                 # 🖼️ Logo API
+│       │
+│       ├── logo-link.js            # 🔗 Logo跳转链接API
+│       │
+│       ├── search.js               # 🔍 文章搜索API
+│       │
+│       ├── site-info.js            # 🌐 站点信息API（标题、副标题、国内线路）
+│       │
+│       ├── sitemap.js              # 🗺️ 站点地图API
+│       │
+│       ├── stats.js                # 📊 统计信息API
+│       │
+│       └── upload.js               # 📤 图片上传API（存入KV）
 │
-├── _routes.json # 路由规则配置文件
-│ └── 功能：定义哪些路径走云函数，哪些路径排除
-│
-└── README.md # 项目说明文档（本文件）
+└── 📁 img/                         # 静态图片目录（可选）
+    ├── logo.png                    # 默认Logo
+    └── bg.jpg                      # 默认背景图
 
-
----
-
-## 📊 文件统计
-
-| 目录 | 文件数 | 说明 |
-|------|--------|------|
-| `.edgeone/` | 1 | 路由配置 |
-| `functions/` 根目录 | 5 | 主入口、中间件、后台、登出 |
-| `functions/post/` | 1 | 文章详情页 |
-| `functions/api/` 根目录 | 11 | 各类 API 接口 |
-| `functions/api/blog/` | 1 | 单篇文章 API |
-| `functions/api/config/` | 1 | 单个书签 API |
-| `functions/api/image/` | 1 | 图片访问 API |
-| 根目录配置文件 | 2 | 路由规则、说明文档 |
-| **合计** | **23** | |
-
----
+页面路由对应关系
+URL	文件	功能
+/	[[catchall]].js	首页（博客列表 + 书签卡片 + 侧边栏）
+/admin	admin.js	管理后台
+/post/:slug	post/[[slug]].js	文章详情页
+/logout	logout.js	退出登录
+/api/config	api/config.js	书签列表/添加
+/api/config/:id	api/config/[id].js	书签更新/删除
+/api/blog	api/blog.js	文章列表/发布
+/api/blog/:id	api/blog/[[id]].js	文章获取/更新/删除
+/api/site-info	api/site-info.js	站点信息
+/api/change-password	api/change-password.js	修改密码
+/api/upload	api/upload.js	图片上传
+/api/image/:filename	api/image/[filename].js	图片获取
+/api/search	api/search.js	文章搜索
+/api/sitemap	api/sitemap.js	站点地图
+/api/stats	api/stats.js	统计信息
+/api/logo	api/logo.js	Logo获取/保存
+/api/logo-link	api/logo-link.js	Logo链接获取/保存
+/api/header-bg	api/header-bg.js	背景图获取/保存
 
 ## 🚀 部署步骤
 
@@ -168,28 +141,6 @@
 | 站点设置 | 站点标题、副标题、国内线路链接 |
 | Logo 设置 | Logo URL、Logo 跳转链接、页眉背景图 |
 | 安全 | 修改管理员密码 |
-
-### API 接口（`/api/*`）
-
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| `/api/config` | GET | 获取书签列表 |
-| `/api/config` | POST | 添加书签 |
-| `/api/config/:id` | PUT | 更新书签 |
-| `/api/config/:id` | DELETE | 删除书签 |
-| `/api/blog` | GET | 获取文章列表 |
-| `/api/blog` | POST | 发布文章 |
-| `/api/blog/:id` | GET | 获取单篇文章 |
-| `/api/blog/:id` | PUT | 更新文章 |
-| `/api/blog/:id` | DELETE | 删除文章 |
-| `/api/site-info` | GET | 获取站点信息 |
-| `/api/site-info` | POST | 保存站点信息 |
-| `/api/change-password` | POST | 修改密码 |
-| `/api/upload` | POST | 上传图片 |
-| `/api/image/:filename` | GET | 获取图片 |
-| `/api/search` | GET | 搜索文章 |
-| `/api/sitemap` | GET | 站点地图 |
-| `/api/stats` | GET | 统计信息 |
 
 ---
 
