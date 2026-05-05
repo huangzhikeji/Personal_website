@@ -1,4 +1,4 @@
-// functions/api/images.js - 图片管理
+// functions/api/images.js - 修复清空KV数据功能
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -75,7 +75,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有图片
+    // 清空所有图片（只删除图片文件和列表）
     if (request.method === 'DELETE' && url.searchParams.get('all') === '1') {
         try {
             const existingList = await NAV_KV.get('image_urls');
@@ -97,9 +97,10 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有KV数据
+    // 清空所有KV数据（不使用list()，只删除已知key）
     if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
         try {
+            // 1. 清空图片
             const existingList = await NAV_KV.get('image_urls');
             if (existingList) {
                 const imageList = JSON.parse(existingList);
@@ -109,17 +110,29 @@ export async function onRequest({ request, env }) {
             }
             await NAV_KV.put('image_urls', JSON.stringify([]));
             
-            const keysToDelete = [
-                'blog_posts', 'sites', 'site_title', 'site_subtitle',
-                'site_logo', 'site_logo_link', 'header_bg', 'cn_link',
-                'admin_username', 'admin_password'
+            // 2. 删除已知的固定key
+            const fixedKeys = [
+                'blog_posts',
+                'sites', 
+                'site_title',
+                'site_subtitle',
+                'site_logo',
+                'site_logo_link',
+                'header_bg',
+                'cn_link',
+                'admin_username',
+                'admin_password'
             ];
             
-            for (const key of keysToDelete) {
+            for (const key of fixedKeys) {
                 try { await NAV_KV.delete(key); } catch(e) {}
             }
             
-            return new Response(JSON.stringify({ code: 200, message: '已清空所有KV数据' }), {
+            // 3. 提示用户可能还有遗留数据
+            return new Response(JSON.stringify({ 
+                code: 200, 
+                message: '已清空主要KV数据。如有遗留数据，请手动在控制台删除。' 
+            }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
@@ -144,7 +157,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 管理页面
+    // 管理页面（保持不变）
     return new Response(`<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><title>图片管理</title>
