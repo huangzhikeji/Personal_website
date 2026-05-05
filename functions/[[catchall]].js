@@ -86,7 +86,7 @@ let blogListHtml = blogPosts.map(post => {
             logoHtml = `<img src="${escapeHtml(logo)}" style="max-width:200px;max-height:240px">`;
         }
     } else {
-        logoHtml = `<div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${escapeHtml(siteTitle || '旭儿导航')}</div>`;
+        logoHtml = `<div style="font-size:28px;font-weight:bold;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${escapeHtml(siteTitle || '旭儿综合网站')}</div>`;
     }
     
     const title = currentTab === 'blog' ? (searchQuery ? `搜索: ${escapeHtml(searchQuery)}` : '博客文章') : (currentCat ? `${escapeHtml(currentCat)} · ${filteredSites.length}个网站` : `全部收藏 · ${sites.length}个网站`);
