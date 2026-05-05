@@ -1,4 +1,4 @@
-// functions/api/images.js - 修复版
+// functions/api/images.js - 修复 Content-Type
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -9,7 +9,9 @@ export async function onRequest({ request, env }) {
             const file = formData.get('image');
             
             if (!file || !file.type.startsWith('image/')) {
-                return new Response(JSON.stringify({ code: 400, message: '请选择图片文件' }));
+                return new Response(JSON.stringify({ code: 400, message: '请选择图片文件' }), {
+                    headers: { 'Content-Type': 'application/json' }
+                });
             }
             
             const bytes = new Uint8Array(await file.arrayBuffer());
@@ -24,9 +26,13 @@ export async function onRequest({ request, env }) {
             
             await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
             
-            return new Response(JSON.stringify({ code: 200, url: '/api/image/' + filename }));
+            return new Response(JSON.stringify({ code: 200, url: '/api/image/' + filename }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         } catch (e) {
-            return new Response(JSON.stringify({ code: 500, message: e.message }));
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
     }
     
@@ -35,9 +41,13 @@ export async function onRequest({ request, env }) {
         try {
             const body = await request.json();
             await NAV_KV.delete('img:' + body.filename);
-            return new Response(JSON.stringify({ code: 200 }));
+            return new Response(JSON.stringify({ code: 200 }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         } catch (e) {
-            return new Response(JSON.stringify({ code: 500, message: e.message }));
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
     }
     
@@ -53,13 +63,17 @@ export async function onRequest({ request, env }) {
                 }
             }
             images.sort((a, b) => b.filename.localeCompare(a.filename));
-            return new Response(JSON.stringify({ code: 200, data: images }));
+            return new Response(JSON.stringify({ code: 200, data: images }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         } catch (e) {
-            return new Response(JSON.stringify({ code: 500, message: e.message }));
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
         }
     }
     
-    // 管理页面
+    // 管理页面 - 注意设置 Content-Type 为 text/html
     return new Response(`<!DOCTYPE html>
 <html>
 <head>
@@ -183,5 +197,7 @@ document.getElementById('refreshBtn').onclick = loadImages;
 loadImages();
 </script>
 </body>
-</html>`);
+</html>`, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
 }
