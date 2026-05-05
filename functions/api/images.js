@@ -150,7 +150,7 @@ async function loadImages() {
             var img = images[j];
             var displayName = img.filename.length > 28 ? img.filename.substring(0, 25) + '...' : img.filename;
             html += '<div class="image-card">' +
-                '<img src="' + img.url + '" onerror="this.style.display=\'none\'">' +
+                '<img src="' + img.url + '">' +
                 '<div class="filename" title="' + img.filename + '"> ' + displayName + '</div>' +
                 '<div class="actions">' +
                     '<button class="copy-btn" data-url="' + img.url + '">复制</button>' +
