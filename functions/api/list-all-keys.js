@@ -1,4 +1,4 @@
-// functions/api/list-all-keys.js
+// functions/api/list-all-keys.js - 增强版（支持直接删除）
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -14,18 +14,54 @@ export async function onRequest({ request, env }) {
         });
     }
     
+    const url = new URL(request.url);
+    const action = url.searchParams.get('action');
+    
+    // 执行删除所有
+    if (action === 'delete-all') {
+        try {
+            let deletedCount = 0;
+            let failedCount = 0;
+            let cursor = null;
+            let hasMore = true;
+            
+            while (hasMore) {
+                const listResult = await NAV_KV.list({ limit: 256, cursor: cursor });
+                if (listResult && listResult.keys) {
+                    for (const key of listResult.keys) {
+                        try {
+                            await NAV_KV.delete(key.name);
+                            deletedCount++;
+                        } catch(e) {
+                            failedCount++;
+                        }
+                    }
+                }
+                cursor = listResult.cursor;
+                hasMore = !!cursor;
+            }
+            
+            return new Response(JSON.stringify({ 
+                code: 200, 
+                message: '删除完成',
+                deleted: deletedCount,
+                failed: failedCount
+            }), { headers: { 'Content-Type': 'application/json' } });
+        } catch (e) {
+            return new Response(JSON.stringify({ code: 500, message: e.message }), {
+                headers: { 'Content-Type': 'application/json' }
+            });
+        }
+    }
+    
+    // 扫描所有 keys
     try {
         let allKeys = [];
         let cursor = null;
         let hasMore = true;
         
-        // limit 最大值为 256
         while (hasMore) {
-            const options = { limit: 256 };
-            if (cursor) {
-                options.cursor = cursor;
-            }
-            const listResult = await NAV_KV.list(options);
+            const listResult = await NAV_KV.list({ limit: 256, cursor: cursor });
             if (listResult && listResult.keys) {
                 for (const key of listResult.keys) {
                     allKeys.push(key.name);
