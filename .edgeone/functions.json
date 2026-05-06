@@ -6,6 +6,7 @@
     { "routePath": "/admin", "handler": "admin" },
     { "routePath": "/admin/*", "handler": "admin" },
     { "routePath": "/logout", "handler": "logout" },
+    { "routePath": "/clear-kv", "handler": "clear-kv" },
     { "routePath": "/api/change-password", "handler": "api/change-password" },
     { "routePath": "/api/blog", "handler": "api/blog" },
     { "routePath": "/api/blog/*", "handler": "api/blog/[[id]]" },
