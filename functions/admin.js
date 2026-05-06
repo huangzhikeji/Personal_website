@@ -144,10 +144,11 @@ export async function onRequest({ request, env }) {
 <div class="container">
     <div class="header">
         <h1>旭儿导航 · 管理后台</h1>
-        <div class="header-buttons">
-            <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">修改密码</button>
-            <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
-        </div>
+<div class="header-buttons">
+    <a href="/api/images" target="_blank" style="background:rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;text-decoration:none;color:white;margin-right:10px">图片管理</a>
+    <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">修改密码</button>
+    <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
+</div>
     </div>
     
     <div class="card">
