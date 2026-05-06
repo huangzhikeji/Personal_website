@@ -144,11 +144,11 @@ export async function onRequest({ request, env }) {
 <div class="container">
     <div class="header">
         <h1>旭儿导航 · 管理后台</h1>
-<div class="header-buttons">
-    <a href="/api/images" target="_blank" style="background:rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;text-decoration:none;color:white;margin-right:10px">图片管理</a>
-    <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">修改密码</button>
-    <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
-</div>
+        <div class="header-buttons">
+            <a href="/api/images" target="_blank" style="background:rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;text-decoration:none;color:white;margin-right:10px">图片管理</a>
+            <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">修改密码</button>
+            <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
+        </div>
     </div>
     
     <div class="card">
@@ -230,9 +230,8 @@ export async function onRequest({ request, env }) {
 
 <div class="danger-zone">
     <h3>危险操作区</h3>
-    <p style="font-size:13px; margin-bottom:15px">清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
-    <button id="clearAllDataBtn" class="btn-danger">清空所有KV数据</button>
-    <button id="cleanUnusedImagesBtn" class="btn-orange" style="margin-left:10px">清理未使用图片</button>
+    <p style="font-size:13px; margin-bottom:15px">清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！此功能请在图片管理页面操作。</p>
+    <button id="cleanUnusedImagesBtn" class="btn-orange">清理未使用图片</button>
 </div>
 
 <!-- 文章编辑弹窗 -->
@@ -829,17 +828,6 @@ document.getElementById('cleanUnusedImagesBtn').onclick = async function() {
         btn.textContent = originalText;
         btn.disabled = false;
     }
-};
-
-// 清空所有KV数据
-document.getElementById('clearAllDataBtn').onclick = async function() {
-    if (!confirm('最终确认：这将删除KV存储中的所有数据！\n\n包括：\n- 所有文章\n- 所有书签\n- 所有图片\n- 站点设置\n- 管理员密码\n\n此操作不可恢复！\n\n输入"确认删除"以继续')) return;
-    var input = prompt('请输入"确认删除"');
-    if (input !== '确认删除') return;
-    var res = await fetch('/api/images?clear=1', { method: 'DELETE' });
-    var data = await res.json();
-    alert(data.message);
-    location.reload();
 };
 
 // 初始化
