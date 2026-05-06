@@ -1,4 +1,4 @@
-// functions/api/images.js - 完整版（移除非法字符）
+// functions/api/images.js - 纯净版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -144,16 +144,22 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 管理页面
-    return newResponse();
+    // 返回管理页面
+    const html = getHtml();
+    return new Response(html, {
+        headers: { 'Content-Type': 'text/html; charset=utf-8' }
+    });
 }
 
-function newResponse() {
-    const html = `<!DOCTYPE html>
+function getHtml() {
+    return `<!DOCTYPE html>
 <html>
-<head><meta charset="UTF-8"><title>图片管理</title>
+<head>
+<meta charset="UTF-8">
+<title>图片管理</title>
 <style>
-body{font-family:system-ui;padding:20px;background:#f0f2f5}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:system-ui;background:#f0f2f5;padding:20px}
 .container{max-width:1000px;margin:0 auto}
 .card{background:white;border-radius:12px;padding:20px;margin-bottom:20px}
 button{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px}
@@ -179,9 +185,9 @@ button.small{padding:4px 8px;font-size:11px;margin:2px}
 <div class="info">
 提示:<br>
 - 上传图片会自动加入列表<br>
-- 点击复制链接获取图片URL，可用于文章封面或内容<br>
+- 点击复制链接获取图片URL<br>
 - 点击删除可移除单张图片<br>
-- 清理未使用图片会扫描所有文章，删除未被引用的图片(安全)
+- 清理未使用图片会删除未被文章引用的图片
 </div>
 <div>
 <button id="uploadBtn" class="btn-green">上传图片</button>
@@ -201,25 +207,65 @@ button.small{padding:4px 8px;font-size:11px;margin:2px}
 </div>
 <script>
 async function loadImages(){
-var c=document.getElementById('imageList'),s=document.getElementById('stats');
+var c=document.getElementById('imageList');
+var s=document.getElementById('stats');
 c.innerHTML='<div class="loading">加载中...</div>';
-try{var r=await fetch('/api/images?list=1'),d=await r.json();
-if(d.code===200&&d.data.length>0){
+try{
+var r=await fetch('/api/images?list=1');
+var d=await r.json();
+if(d.code===200 && d.data.length>0){
 s.innerText='共 '+d.data.length+' 张';
 var html='';
 for(var i=0;i<d.data.length;i++){
-var img=d.data[i],name=img.filename.length>25?img.filename.substring(0,22)+'...':img.filename;
-html+='<div class="image-card"><img src="'+img.url+'"><div class="filename" title="'+img.filename+'">'+name+'</div><div class="actions"><button class="small copy-btn" data-url="'+img.url+'">复制</button><button class="small delete-btn" data-filename="'+img.filename+'">删除</button></div></div>';
+var img=d.data[i];
+var name=img.filename.length>25?img.filename.substring(0,22)+'...':img.filename;
+html=html+'<div class="image-card">'+
+'<img src="'+img.url+'">'+
+'<div class="filename" title="'+img.filename+'">'+name+'</div>'+
+'<div class="actions">'+
+'<button class="small copy-btn" data-url="'+img.url+'">复制</button>'+
+'<button class="small delete-btn" data-filename="'+img.filename+'">删除</button>'+
+'</div></div>';
 }
 c.innerHTML=html;
-document.querySelectorAll('.copy-btn').forEach(btn=>{btn.onclick=()=>{navigator.clipboard.writeText(btn.dataset.url);btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500);}});
-document.querySelectorAll('.delete-btn').forEach(btn=>{btn.onclick=async()=>{if(!confirm('确定删除这张图片？'))return;var res=await fetch('/api/images',{method:'DELETE',body:JSON.stringify({filename:btn.dataset.filename}),headers:{'Content-Type':'application/json'}});var data=await res.json();if(data.code===200){alert('删除成功');loadImages();}else{alert('删除失败');}}});
-}else{c.innerHTML='<div class="loading">暂无图片，点击上传图片添加</div>';s.innerText='';}
-}catch(e){c.innerHTML='<div class="loading">加载失败</div>';}}
-
-document.getElementById('cleanUnusedBtn').onclick=async()=>{
-if(!confirm('扫描并删除未被任何文章引用的图片？\n\n此操作不会删除文章正在使用的图片，是安全的。'))return;
-var btn=document.getElementById('cleanUnusedBtn');
+var copyBtns=document.querySelectorAll('.copy-btn');
+for(var j=0;j<copyBtns.length;j++){
+copyBtns[j].onclick=function(){
+navigator.clipboard.writeText(this.dataset.url);
+this.textContent='已复制';
+var self=this;
+setTimeout(function(){self.textContent='复制';},1500);
+};
+}
+var delBtns=document.querySelectorAll('.delete-btn');
+for(var k=0;k<delBtns.length;k++){
+delBtns[k].onclick=async function(){
+if(!confirm('确定删除这张图片？')) return;
+var res=await fetch('/api/images',{
+method:'DELETE',
+body:JSON.stringify({filename:this.dataset.filename}),
+headers:{'Content-Type':'application/json'}
+});
+var data=await res.json();
+if(data.code===200){
+alert('删除成功');
+loadImages();
+}else{
+alert('删除失败');
+}
+};
+}
+}else{
+c.innerHTML='<div class="loading">暂无图片，点击上传图片添加</div>';
+s.innerText='';
+}
+}catch(e){
+c.innerHTML='<div class="loading">加载失败</div>';
+}
+}
+document.getElementById('cleanUnusedBtn').onclick=async function(){
+if(!confirm('扫描并删除未被任何文章引用的图片？')) return;
+var btn=this;
 var originalText=btn.textContent;
 btn.textContent='扫描中...';
 btn.disabled=true;
@@ -227,28 +273,66 @@ try{
 var res=await fetch('/api/clean-unused-images',{method:'POST'});
 var data=await res.json();
 if(data.code===200){
-alert('清理完成！\n\n统计：\n总图片: '+data.total+' 张\n引用中: '+data.referenced+' 张\n未引用: '+data.unused+' 张\n已删除: '+data.deleted+' 张');
+alert('清理完成！\n总图片:'+data.total+'张\n引用中:'+data.referenced+'张\n未引用:'+data.unused+'张\n已删除:'+data.deleted+'张');
 loadImages();
 }else{
-alert('清理失败: '+(data.message||'未知错误'));
+alert('清理失败:'+(data.message||'未知错误'));
 }
 }catch(err){
-alert('清理失败: '+err.message);
+alert('清理失败:'+err.message);
 }finally{
 btn.textContent=originalText;
 btn.disabled=false;
-}};
-
-document.getElementById('uploadBtn').onclick=()=>document.getElementById('fileInput').click();
-document.getElementById('fileInput').onchange=async(e)=>{var f=e.target.files[0];if(!f)return;var fd=new FormData();fd.append('image',f);var btn=document.getElementById('uploadBtn');btn.textContent='上传中...';btn.disabled=true;try{var r=await fetch('/api/images',{method:'POST',body:fd});var d=await r.json();if(d.code===200){alert('上传成功');loadImages();}else{alert('上传失败: '+d.message);}}catch(err){alert('上传失败');}finally{btn.textContent='上传图片';btn.disabled=false;e.target.value='';}};
+}
+};
+document.getElementById('uploadBtn').onclick=function(){
+document.getElementById('fileInput').click();
+};
+document.getElementById('fileInput').onchange=async function(e){
+var f=e.target.files[0];
+if(!f) return;
+var fd=new FormData();
+fd.append('image',f);
+var btn=document.getElementById('uploadBtn');
+var originalText=btn.textContent;
+btn.textContent='上传中...';
+btn.disabled=true;
+try{
+var r=await fetch('/api/images',{method:'POST',body:fd});
+var d=await r.json();
+if(d.code===200){
+alert('上传成功');
+loadImages();
+}else{
+alert('上传失败:'+d.message);
+}
+}catch(err){
+alert('上传失败');
+}finally{
+btn.textContent=originalText;
+btn.disabled=false;
+e.target.value='';
+}
+};
 document.getElementById('refreshBtn').onclick=loadImages;
-document.getElementById('clearImagesBtn').onclick=async()=>{if(!confirm('清空所有图片？\n\n这将删除KV中所有图片文件，文章中的图片将无法显示！'))return;var res=await fetch('/api/images?all=1',{method:'DELETE'});var data=await res.json();alert(data.message);loadImages();};
-document.getElementById('clearAllDataBtn').onclick=async()=>{if(!confirm('最终确认：这将删除KV存储中的所有数据！\n\n包括：\n- 所有文章\n- 所有书签\n- 所有图片\n- 站点设置\n- 管理员密码\n\n此操作不可恢复！\n\n输入"确认删除"以继续'))return;if(prompt('请输入"确认删除"')!=='确认删除')return;var res=await fetch('/api/images?clear=1',{method:'DELETE'});var data=await res.json();alert(data.message);loadImages();};
+document.getElementById('clearImagesBtn').onclick=async function(){
+if(!confirm('清空所有图片？')) return;
+var res=await fetch('/api/images?all=1',{method:'DELETE'});
+var data=await res.json();
+alert(data.message);
+loadImages();
+};
+document.getElementById('clearAllDataBtn').onclick=async function(){
+if(!confirm('最终确认：这将删除KV存储中的所有数据！\n\n此操作不可恢复！\n\n输入"确认删除"以继续')) return;
+var input=prompt('请输入"确认删除"');
+if(input!=='确认删除') return;
+var res=await fetch('/api/images?clear=1',{method:'DELETE'});
+var data=await res.json();
+alert(data.message);
+loadImages();
+};
 loadImages();
 </script>
 </body>
 </html>`;
-    return new Response(html, {
-        headers: { 'Content-Type': 'text/html; charset=utf-8' }
-    });
 }
