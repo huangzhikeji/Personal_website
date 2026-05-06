@@ -1,4 +1,4 @@
-// functions/clear-kv.js
+// functions/clear-kv.js - 完整版
 export async function onRequest() {
     const html = `<!DOCTYPE html>
 <html>
@@ -7,7 +7,7 @@ export async function onRequest() {
     body{font-family:system-ui;padding:20px;background:#f0f2f5}
     .container{max-width:800px;margin:0 auto}
     .card{background:white;border-radius:12px;padding:20px;margin-bottom:20px}
-    button{background:#667eea;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer}
+    button{background:#667eea;color:white;border:none;padding:10px 20px;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px}
     .btn-danger{background:#e53e3e}
     .btn-warning{background:#ed8936}
     .result{background:#f8fafc;padding:15px;border-radius:8px;margin-top:15px;font-family:monospace;font-size:12px;max-height:300px;overflow:auto}
@@ -22,8 +22,10 @@ export async function onRequest() {
         <h2>KV 数据清理工具</h2>
         <p>此工具会彻底清除 KV 存储中的所有数据，包括文章、书签、图片、设置等。</p>
         <p style="color:#e53e3e"><strong>警告：此操作不可恢复！</strong></p>
-        <button id="scanBtn" class="btn-warning">扫描所有 KV Key</button>
-        <button id="clearBtn" class="btn-danger" style="display:none">确认删除所有数据</button>
+        <div>
+            <button id="scanBtn" class="btn-warning">扫描所有 KV Key</button>
+            <button id="deleteAllBtn" class="btn-danger">一键删除全部 Key</button>
+        </div>
         <div id="progress" class="progress" style="display:none"><div id="progressBar" class="progress-bar"></div></div>
         <div id="result" class="result"></div>
     </div>
@@ -47,7 +49,6 @@ document.getElementById('scanBtn').onclick = async function() {
             resultDiv.innerHTML += '总共发现 ' + allKeys.length + ' 个 Key<br>';
             if (allKeys.length > 0) {
                 resultDiv.innerHTML += '<br>Key 列表:<br><pre>' + allKeys.join('\\n') + '</pre>';
-                document.getElementById('clearBtn').style.display = 'inline-block';
             } else {
                 resultDiv.innerHTML += '<br>KV 存储已经是空的，无需清理。';
             }
@@ -62,60 +63,32 @@ document.getElementById('scanBtn').onclick = async function() {
     }
 };
 
-document.getElementById('clearBtn').onclick = async function() {
-    if (!confirm('最终确认：这将删除 ' + allKeys.length + ' 个 Key！\\n\\n此操作不可恢复！\\n\\n输入"确认删除"以继续')) return;
-    var input = prompt('请输入"确认删除"');
-    if (input !== '确认删除') return;
-    
+document.getElementById('deleteAllBtn').onclick = async function() {
+    if (!confirm('确定要删除所有 Key 吗？\\n\\n此操作不可恢复！')) return;
     var btn = this;
     btn.disabled = true;
-    var progressDiv = document.getElementById('progress');
-    var progressBar = document.getElementById('progressBar');
+    btn.textContent = '删除中...';
     var resultDiv = document.getElementById('result');
+    resultDiv.innerHTML = '正在删除所有 Key...';
     
-    progressDiv.style.display = 'block';
-    resultDiv.innerHTML = '开始删除...<br>';
-    
-    var deleted = 0;
-    var failed = 0;
-    
-    for (var i = 0; i < allKeys.length; i++) {
-        var percent = Math.round((i / allKeys.length) * 100);
-        progressBar.style.width = percent + '%';
-        resultDiv.innerHTML = '正在删除: ' + (i+1) + ' / ' + allKeys.length + '<br>';
-        
-        try {
-            var res = await fetch('/api/delete-key', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ key: allKeys[i] })
-            });
-            var data = await res.json();
-            if (data.code === 200) {
-                deleted++;
-            } else {
-                failed++;
-                resultDiv.innerHTML += '删除失败: ' + allKeys[i] + '<br>';
-            }
-        } catch(e) {
-            failed++;
-            resultDiv.innerHTML += '删除错误: ' + allKeys[i] + ' - ' + e.message + '<br>';
+    try {
+        var res = await fetch('/api/list-all-keys?action=delete-all');
+        var data = await res.json();
+        if (data.code === 200) {
+            resultDiv.innerHTML = '<strong>删除完成！</strong><br>';
+            resultDiv.innerHTML += '成功删除: ' + data.deleted + ' 个<br>';
+            resultDiv.innerHTML += '失败: ' + data.failed + ' 个<br>';
+            // 重新扫描
+            document.getElementById('scanBtn').click();
+        } else {
+            resultDiv.innerHTML = '删除失败: ' + data.message;
         }
-        
-        // 避免请求过快
-        await new Promise(r => setTimeout(r, 50));
+    } catch(e) {
+        resultDiv.innerHTML = '删除失败: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = '一键删除全部 Key';
     }
-    
-    progressBar.style.width = '100%';
-    resultDiv.innerHTML += '<br><strong>删除完成！</strong><br>';
-    resultDiv.innerHTML += '成功: ' + deleted + ' 个<br>';
-    resultDiv.innerHTML += '失败: ' + failed + ' 个<br>';
-    
-    document.getElementById('clearBtn').style.display = 'none';
-    btn.disabled = false;
-    
-    // 重新扫描
-    document.getElementById('scanBtn').click();
 };
 </script>
 </body>
