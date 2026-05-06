@@ -1,6 +1,23 @@
-// functions/api/images.js - 增强版（彻底清空KV数据）
+// functions/api/images.js - 增强版（添加全局初始化解决冷启动超时）
+let isInitialized = false;
+
+async function globalInit() {
+    if (isInitialized) return;
+    try {
+        // 预热操作：预先连接 KV
+        await NAV_KV.get('image_urls');
+        console.log('KV 预热完成');
+    } catch(e) {
+        console.log('KV 预热失败', e);
+    }
+    isInitialized = true;
+}
+
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
+    
+    // 确保初始化完成
+    await globalInit();
     
     // 上传图片
     if (request.method === 'POST') {
@@ -75,7 +92,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有图片（只删除图片文件和列表）
+    // 清空所有图片
     if (request.method === 'DELETE' && url.searchParams.get('all') === '1') {
         try {
             const existingList = await NAV_KV.get('image_urls');
@@ -97,7 +114,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有KV数据 - 增强版（彻底清除）
+    // 清空所有KV数据 - 增强版
     if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
         try {
             // 1. 清空图片列表中的图片
