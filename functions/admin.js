@@ -228,12 +228,6 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
-<div class="danger-zone">
-    <h3>危险操作区</h3>
-    <p style="font-size:13px; margin-bottom:15px">清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！此功能请在图片管理页面操作。</p>
-    <button id="cleanUnusedImagesBtn" class="btn-orange">清理未使用图片</button>
-</div>
-
 <!-- 文章编辑弹窗 -->
 <div id="postModal" class="modal">
     <div class="blog-modal-content">
@@ -792,43 +786,6 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
         setTimeout(() => { status.textContent = ''; }, 3000);
     }
 });
-
-// 清理未使用图片
-document.getElementById('cleanUnusedImagesBtn').onclick = async function() {
-    if (!confirm('扫描并删除未被任何文章引用的图片？\n\n此操作不会删除文章正在使用的图片，是安全的。')) return;
-    var btn = this;
-    var originalText = btn.textContent;
-    btn.textContent = '扫描中...';
-    btn.disabled = true;
-    try {
-        var scanRes = await fetch('/api/referenced-images');
-        var scanData = await scanRes.json();
-        if (scanData.code !== 200) {
-            alert('扫描失败: ' + (scanData.message || '未知错误'));
-            return;
-        }
-        if (scanData.unused === 0) {
-            alert('没有未使用的图片，无需清理。\n\n总图片: ' + scanData.total + ' 张\n引用中: ' + scanData.referenced + ' 张');
-            return;
-        }
-        if (!confirm('发现 ' + scanData.unused + ' 张未使用的图片。\n\n总图片: ' + scanData.total + ' 张\n引用中: ' + scanData.referenced + ' 张\n未使用: ' + scanData.unused + ' 张\n\n确定要删除它们吗？此操作不可恢复！')) return;
-        
-        btn.textContent = '清理中...';
-        var cleanRes = await fetch('/api/clean-unused-images', { method: 'POST' });
-        var cleanData = await cleanRes.json();
-        if (cleanData.code === 200) {
-            alert('清理完成！\n\n总图片: ' + cleanData.total + ' 张\n引用中: ' + cleanData.referenced + ' 张\n未引用: ' + cleanData.unused + ' 张\n已删除: ' + cleanData.deleted + ' 张');
-            location.reload();
-        } else {
-            alert('清理失败: ' + (cleanData.message || '未知错误'));
-        }
-    } catch (err) {
-        alert('操作失败: ' + err.message);
-    } finally {
-        btn.textContent = originalText;
-        btn.disabled = false;
-    }
-};
 
 // 初始化
 loadLogo();
