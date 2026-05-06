@@ -255,12 +255,13 @@ button.small{padding:4px 8px;font-size:11px;margin:2px}
 </div>
 <input type="file" id="fileInput" accept="image/*" style="display:none">
 <div id="imageList" class="image-grid"><div class="loading">加载中...</div></div>
-</div>
 <div class="danger-zone">
-<h3>危险操作区</h3>
-<p>清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
-<button id="clearAllDataBtn" class="btn-red">清空所有KV数据</button>
-</div>
+    <h3>危险操作区</h3>
+    <p>清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button id="clearAllDataBtn" class="btn-red">清空所有KV数据</button>
+        <a href="/clear-kv.html" target="_blank" style="background:#ed8936;color:white;padding:9px 18px;border-radius:8px;text-decoration:none">KV清理工具</a>
+    </div>
 </div>
 <script>
 async function loadImages(){
