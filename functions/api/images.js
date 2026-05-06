@@ -1,23 +1,6 @@
-// functions/api/images.js - 增强版（添加全局初始化解决冷启动超时）
-let isInitialized = false;
-
-async function globalInit() {
-    if (isInitialized) return;
-    try {
-        // 预热操作：预先连接 KV
-        await NAV_KV.get('image_urls');
-        console.log('KV 预热完成');
-    } catch(e) {
-        console.log('KV 预热失败', e);
-    }
-    isInitialized = true;
-}
-
+// functions/api/images.js - 简化版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
-    
-    // 确保初始化完成
-    await globalInit();
     
     // 上传图片
     if (request.method === 'POST') {
@@ -114,10 +97,10 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有KV数据 - 增强版
+    // 清空所有KV数据
     if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
         try {
-            // 1. 清空图片列表中的图片
+            // 清空图片
             const existingList = await NAV_KV.get('image_urls');
             if (existingList) {
                 const imageList = JSON.parse(existingList);
@@ -127,23 +110,7 @@ export async function onRequest({ request, env }) {
             }
             await NAV_KV.put('image_urls', JSON.stringify([]));
             
-            // 2. 扫描并删除所有 img: 开头的 key
-            try {
-                let cursor = null;
-                let hasMore = true;
-                while (hasMore) {
-                    const listResult = await NAV_KV.list({ prefix: 'img:', cursor: cursor, limit: 100 });
-                    if (listResult && listResult.keys) {
-                        for (let i = 0; i < listResult.keys.length; i++) {
-                            try { await NAV_KV.delete(listResult.keys[i].name); } catch(e) {}
-                        }
-                    }
-                    cursor = listResult.cursor;
-                    hasMore = !!cursor;
-                }
-            } catch(e) {}
-            
-            // 3. 删除所有已知的固定key
+            // 删除所有已知的固定key
             const keysToDelete = [
                 'blog_posts', 'sites', 'site_title', 'site_subtitle',
                 'site_logo', 'site_logo_link', 'header_bg', 'cn_link',
@@ -153,39 +120,7 @@ export async function onRequest({ request, env }) {
                 try { await NAV_KV.delete(keysToDelete[i]); } catch(e) {}
             }
             
-            // 4. 扫描并删除所有 session: 开头的 key
-            try {
-                let cursor = null;
-                let hasMore = true;
-                while (hasMore) {
-                    const listResult = await NAV_KV.list({ prefix: 'session:', cursor: cursor, limit: 100 });
-                    if (listResult && listResult.keys) {
-                        for (let i = 0; i < listResult.keys.length; i++) {
-                            try { await NAV_KV.delete(listResult.keys[i].name); } catch(e) {}
-                        }
-                    }
-                    cursor = listResult.cursor;
-                    hasMore = !!cursor;
-                }
-            } catch(e) {}
-            
-            // 5. 扫描并删除所有 views: 开头的 key
-            try {
-                let cursor = null;
-                let hasMore = true;
-                while (hasMore) {
-                    const listResult = await NAV_KV.list({ prefix: 'views:', cursor: cursor, limit: 100 });
-                    if (listResult && listResult.keys) {
-                        for (let i = 0; i < listResult.keys.length; i++) {
-                            try { await NAV_KV.delete(listResult.keys[i].name); } catch(e) {}
-                        }
-                    }
-                    cursor = listResult.cursor;
-                    hasMore = !!cursor;
-                }
-            } catch(e) {}
-            
-            return new Response(JSON.stringify({ code: 200, message: '已彻底清空所有KV数据' }), {
+            return new Response(JSON.stringify({ code: 200, message: '已清空所有KV数据' }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
@@ -255,6 +190,13 @@ button.small{padding:4px 8px;font-size:11px;margin:2px}
 </div>
 <input type="file" id="fileInput" accept="image/*" style="display:none">
 <div id="imageList" class="image-grid"><div class="loading">加载中...</div></div>
+</div>
+<div class="danger-zone">
+<h3>危险操作区</h3>
+<p>清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
+<button id="clearAllDataBtn" class="btn-red">清空所有KV数据</button>
+</div>
+</div>
 <script>
 async function loadImages(){
 var c=document.getElementById('imageList');
