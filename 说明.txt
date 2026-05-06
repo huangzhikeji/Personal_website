@@ -61,7 +61,7 @@
     └── bg.jpg                      # 默认背景图
 
 页面路由对应关系
-URL	文件	功能
+
 /	[[catchall]].js	首页（博客列表 + 书签卡片 + 侧边栏）
 /admin	admin.js	管理后台
 /post/:slug	post/[[slug]].js	文章详情页
@@ -84,7 +84,7 @@ URL	文件	功能
 20260506修改添加功能
 
 网站整体结构
-text
+
 旭儿导航
 ├── 首页（前台展示）
 │   ├── 博客列表（Tab切换）
@@ -147,21 +147,21 @@ text
 核心功能说明
 
 根目录配置文件
-文件	功能
+
 _routes.json	静态路由配置
 package.json	项目配置
 README.md	说明文档
 functions/ 根目录
-文件	功能
+
 functions/_middleware.js	请求中间件（处理退出登录、静态资源）
 functions/[[catchall]].js	首页（博客列表、书签列表、侧边栏、热门文章、标签云）
 functions/admin.js	后台管理界面（博客管理、书签管理、站点设置、Logo设置、修改密码）
 functions/logout.js	退出登录
 functions/post/
-文件	功能
+
 functions/post/[[slug]].js	文章详情页（显示文章内容、目录、相关文章、阅读量）
 functions/api/
-文件	功能
+
 api/blog.js	博客 API：获取文章列表、发布文章
 api/blog/[[id]].js	单篇文章 API：获取、更新、删除
 api/config.js	书签 API：获取书签列表、添加书签
@@ -179,14 +179,14 @@ api/site-info.js	站点信息 API（标题、副标题、国内线路）
 api/sitemap.js	站点地图 XML API
 api/stats.js	统计 API（文章数、阅读量、标签统计）
 api/upload.js	图片上传 API（存入 KV）
-文件统计
-目录	文件数
+
+
 根目录	3
 functions/	4
 functions/post/	1
 functions/api/	16
 总计	24
-关键文件对应关系
+
 访问 URL	处理文件
 /	[[catchall]].js
 /admin	admin.js
