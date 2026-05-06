@@ -1,4 +1,3 @@
-// functions/api/clean-unused-images.js
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -9,38 +8,31 @@ export async function onRequest({ request, env }) {
     }
     if (!isLoggedIn) {
         return new Response(JSON.stringify({ code: 401, message: '未登录' }), {
-            status: 401, headers: { 'Content-Type': 'application/json' }
+            status: 401,
+            headers: { 'Content-Type': 'application/json' }
         });
     }
     
-    // 获取所有文章
     const data = await NAV_KV.get('blog_posts');
     const posts = data ? JSON.parse(data) : [];
-    
-    // 收集所有被引用的图片
     const referencedImages = new Set();
     
     for (const post of posts) {
         if (post.coverImage && post.coverImage.includes('/api/image/')) {
-            const filename = post.coverImage.split('/api/image/')[1];
-            referencedImages.add(filename);
+            referencedImages.add(post.coverImage.split('/api/image/')[1]);
         }
         if (post.content) {
             const matches = post.content.match(/\/api\/image\/([^"'\s)]+)/g);
             if (matches) {
-                matches.forEach(m => {
-                    const filename = m.replace('/api/image/', '');
-                    referencedImages.add(filename);
-                });
+                for (const m of matches) {
+                    referencedImages.add(m.replace('/api/image/', ''));
+                }
             }
         }
     }
     
-    // 获取所有图片列表
     const imageListData = await NAV_KV.get('image_urls');
     const allImages = imageListData ? JSON.parse(imageListData) : [];
-    
-    // 找出并删除未引用的图片
     let deletedCount = 0;
     const remainingImages = [];
     
@@ -48,18 +40,15 @@ export async function onRequest({ request, env }) {
         if (referencedImages.has(img.filename)) {
             remainingImages.push(img);
         } else {
-            // 删除未引用的图片
             try {
                 await NAV_KV.delete('img:' + img.filename);
                 deletedCount++;
             } catch(e) {
-                console.error('删除失败:', img.filename);
                 remainingImages.push(img);
             }
         }
     }
     
-    // 更新图片列表
     await NAV_KV.put('image_urls', JSON.stringify(remainingImages));
     
     return new Response(JSON.stringify({
