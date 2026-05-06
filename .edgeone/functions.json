@@ -21,6 +21,8 @@
     { "routePath": "/api/stats", "handler": "api/stats" },
     { "routePath": "/api/upload", "handler": "api/upload" },
     { "routePath": "/post/*", "handler": "post/[[slug]]" },
+    { "routePath": "/api/referenced-images", "handler": "api/referenced-images" },
+    { "routePath": "/api/clean-unused-images", "handler": "api/clean-unused-images" },
     { "routePath": "/api/site-info", "handler": "api/site-info" }
   ]
 }
