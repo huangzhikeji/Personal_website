@@ -1,4 +1,4 @@
-// functions/api/images.js - 简化版
+// functions/api/images.js - 完整版
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -97,10 +97,10 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有KV数据
+    // 清空所有KV数据 - 增强版
     if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
         try {
-            // 清空图片
+            // 1. 清空图片
             const existingList = await NAV_KV.get('image_urls');
             if (existingList) {
                 const imageList = JSON.parse(existingList);
@@ -108,9 +108,28 @@ export async function onRequest({ request, env }) {
                     try { await NAV_KV.delete('img:' + imageList[i].filename); } catch(e) {}
                 }
             }
-            await NAV_KV.put('image_urls', JSON.stringify([]));
             
-            // 删除所有已知的固定key
+            // 2. 删除 image_urls 本身
+            try { await NAV_KV.delete('image_urls'); } catch(e) {}
+            
+            // 3. 删除所有 session: 开头的 key
+            try {
+                let cursor = null;
+                while (true) {
+                    const options = { prefix: 'session:', limit: 256 };
+                    if (cursor) options.cursor = cursor;
+                    const listResult = await NAV_KV.list(options);
+                    if (listResult && listResult.keys) {
+                        for (let i = 0; i < listResult.keys.length; i++) {
+                            try { await NAV_KV.delete(listResult.keys[i].name); } catch(e) {}
+                        }
+                    }
+                    cursor = listResult.cursor;
+                    if (!cursor) break;
+                }
+            } catch(e) {}
+            
+            // 4. 删除所有已知的固定key
             const keysToDelete = [
                 'blog_posts', 'sites', 'site_title', 'site_subtitle',
                 'site_logo', 'site_logo_link', 'header_bg', 'cn_link',
