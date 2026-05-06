@@ -1,4 +1,4 @@
-// functions/api/list-all-keys.js - 修复 cursor 类型
+// functions/api/list-all-keys.js - 修复 key 格式
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -33,8 +33,10 @@ export async function onRequest({ request, env }) {
                 
                 if (listResult && listResult.keys) {
                     for (const key of listResult.keys) {
+                        // 直接使用 key.name，不要做任何处理
+                        const keyName = key.name;
                         try {
-                            await NAV_KV.delete(key.name);
+                            await NAV_KV.delete(keyName);
                             deletedCount++;
                         } catch(e) {
                             failedCount++;
@@ -73,6 +75,7 @@ export async function onRequest({ request, env }) {
             
             if (listResult && listResult.keys) {
                 for (const key of listResult.keys) {
+                    // 直接使用 key.name，不做任何修改
                     allKeys.push(key.name);
                 }
             }
