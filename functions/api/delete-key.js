@@ -31,9 +31,18 @@ export async function onRequest({ request, env }) {
             });
         }
         
+        // 删除 key
         await NAV_KV.delete(key);
         
-        return new Response(JSON.stringify({ code: 200, message: '删除成功', key: key }), {
+        // 验证是否删除成功
+        const check = await NAV_KV.get(key);
+        
+        return new Response(JSON.stringify({ 
+            code: 200, 
+            message: '删除成功', 
+            key: key,
+            verified: check === null
+        }), {
             headers: { 'Content-Type': 'application/json' }
         });
     } catch (e) {
