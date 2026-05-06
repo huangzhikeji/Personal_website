@@ -81,6 +81,154 @@ URL	文件	功能
 /api/logo-link	api/logo-link.js	Logo链接获取/保存
 /api/header-bg	api/header-bg.js	背景图获取/保存
 
+20260506修改添加功能
+
+网站整体结构
+text
+旭儿导航
+├── 首页（前台展示）
+│   ├── 博客列表（Tab切换）
+│   ├── 书签列表（Tab切换）
+│   ├── 侧边栏
+│   │   ├── Logo 显示
+│   │   ├── 书签分类导航
+│   │   ├── 热门文章
+│   │   └── 后台管理入口
+│   ├── 搜索文章
+│   ├── 标签云
+│   ├── 暗色模式切换
+│   └── 返回顶部按钮
+│
+├── 后台管理
+│   ├── 博客管理
+│   │   ├── 发布文章（标题、分类、封面图、内容、标签、置顶）
+│   │   ├── 编辑文章
+│   │   ├── 删除文章
+│   │   └── 搜索/筛选文章
+│   ├── 书签管理
+│   │   ├── 添加书签（名称、网址、分类、Logo、描述、排序）
+│   │   ├── 编辑书签
+│   │   ├── 删除书签
+│   │   └── 书签列表展示
+│   ├── Logo 设置
+│   │   ├── 上传/设置 Logo URL
+│   │   └── 设置 Logo 点击链接
+│   ├── 页眉背景图设置
+│   ├── 站点设置
+│   │   ├── 站点标题
+│   │   ├── 站点副标题
+│   │   └── 国内线路链接
+│   ├── 修改密码
+│   └── 退出登录
+│
+├── 图片管理（独立页面）
+│   ├── 上传图片（2MB 限制）
+│   ├── 图片列表展示
+│   ├── 复制图片链接
+│   ├── 删除单张图片
+│   ├── 清空所有图片
+│   ├── 清理未使用图片（安全删除）
+│   └── 清空所有KV数据（危险操作）
+│
+├── 文章详情页
+│   ├── 文章标题、分类、发布日期、阅读量
+│   ├── 文章内容
+│   ├── 目录导航（自动生成）
+│   ├── 标签显示
+│   ├── 相关文章推荐
+│   ├── 返回首页
+│   └── 暗色模式切换
+│
+└── 其他功能
+    ├── 站点地图（/api/sitemap）
+    ├── 搜索 API
+    ├── 统计 API
+    └── 登录验证（Session）
+核心功能说明
+
+根目录配置文件
+文件	功能
+_routes.json	静态路由配置
+package.json	项目配置
+README.md	说明文档
+functions/ 根目录
+文件	功能
+functions/_middleware.js	请求中间件（处理退出登录、静态资源）
+functions/[[catchall]].js	首页（博客列表、书签列表、侧边栏、热门文章、标签云）
+functions/admin.js	后台管理界面（博客管理、书签管理、站点设置、Logo设置、修改密码）
+functions/logout.js	退出登录
+functions/post/
+文件	功能
+functions/post/[[slug]].js	文章详情页（显示文章内容、目录、相关文章、阅读量）
+functions/api/
+文件	功能
+api/blog.js	博客 API：获取文章列表、发布文章
+api/blog/[[id]].js	单篇文章 API：获取、更新、删除
+api/config.js	书签 API：获取书签列表、添加书签
+api/config/[id].js	单本书签 API：更新、删除
+api/change-password.js	修改密码 API
+api/clean-unused-images.js	清理未使用图片 API
+api/header-bg.js	页眉背景图 API（获取、保存）
+api/image/[filename].js	图片读取 API（从 KV 读取图片并返回）
+api/images.js	图片管理页面 + API（上传、删除、清空、清理未使用）
+api/logo.js	Logo API（获取、保存）
+api/logo-link.js	Logo 链接 API（获取、保存）
+api/referenced-images.js	扫描被文章引用的图片 API
+api/search.js	搜索 API
+api/site-info.js	站点信息 API（标题、副标题、国内线路）
+api/sitemap.js	站点地图 XML API
+api/stats.js	统计 API（文章数、阅读量、标签统计）
+api/upload.js	图片上传 API（存入 KV）
+文件统计
+目录	文件数
+根目录	3
+functions/	4
+functions/post/	1
+functions/api/	16
+总计	24
+关键文件对应关系
+访问 URL	处理文件
+/	[[catchall]].js
+/admin	admin.js
+/api/images	api/images.js
+/post/xxx	post/[[slug]].js
+/api/upload	api/upload.js
+/api/image/xxx.jpg	api/image/[filename].js
+/api/blog	api/blog.js
+/api/blog/123	api/blog/[[id]].js
+
+
+功能模块	说明
+首页	展示博客文章列表和书签，支持 Tab 切换、搜索、标签筛选
+博客	发布、编辑、删除、置顶、标签、封面图、阅读量统计
+书签	添加、编辑、删除、分类、排序、Logo 显示
+图片管理	上传、删除、复制链接、清理未使用图片、清空所有数据
+站点设置	标题、副标题、Logo、背景图、国内线路按钮
+文章详情	显示完整文章、目录、相关文章、阅读量
+暗色模式	全站支持，记住用户偏好
+响应式布局	手机端适配
+数据存储（KV）
+数据类型	KV Key 示例	说明
+文章	blog_posts	所有文章数据
+书签	sites	所有书签数据
+图片文件	img:xxx.jpg	图片 Base64 数据
+图片列表	image_urls	图片索引
+阅读量	views:文章ID	每篇文章阅读量
+会话	session:token	登录会话
+站点设置	site_title, site_subtitle, cn_link 等	配置信息
+Logo/背景	site_logo, site_logo_link, header_bg	图片设置
+管理员	admin_username, admin_password	登录凭证
+访问路径
+路径	功能
+/	首页
+/admin	后台管理登录页
+/admin（已登录）	后台管理界面
+/api/images	图片管理页面
+/post/文章slug	文章详情页
+/api/sitemap	站点地图 XML
+/logout	退出登录
+
+
 ## 🚀 部署步骤
 
 ### 第一步：创建 KV 命名空间
