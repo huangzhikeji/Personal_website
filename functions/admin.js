@@ -90,7 +90,7 @@ export async function onRequest({ request, env }) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理后台 · 旭儿导航</title>
+    <title>管理后台</title>
     <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
     <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
     <style>
@@ -143,7 +143,7 @@ export async function onRequest({ request, env }) {
 <body>
 <div class="container">
     <div class="header">
-        <h1>旭儿导航 · 管理后台</h1>
+        <h1>管理后台</h1>
         <div class="header-buttons">
             <a href="/api/images" target="_blank" style="background:rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;text-decoration:none;color:white;margin-right:10px">图片管理</a>
             <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">修改密码</button>
@@ -209,7 +209,7 @@ export async function onRequest({ request, env }) {
         <div class="card-title">站点设置</div>
         <div class="form-group"><label>站点标题</label><input type="text" id="siteTitleInput" placeholder="旭儿导航" maxlength="50"></div>
         <div class="form-group"><label>站点副标题</label><input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100"></div>
-        <div class="form-group"><label>国内线路链接</label><input type="url" id="cnLinkInput" placeholder="https://你的国内备用域名.com"><small style="color:#a0aec0">填写后首页标题旁会显示按钮</small></div>
+        <div class="form-group"><label>切换线路链接</label><input type="url" id="cnLinkInput" placeholder="https://填写你的备用域名.com"><small style="color:#a0aec0">填写后首页标题旁会显示按钮</small></div>
         <button id="saveSiteInfoBtn" class="btn-primary">保存站点信息</button>
         <span id="siteInfoStatus" style="margin-left:10px;font-size:13px;"></span>
     </div>
