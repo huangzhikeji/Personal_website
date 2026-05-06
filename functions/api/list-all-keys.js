@@ -1,4 +1,4 @@
-// functions/api/list-all-keys.js - 增强版（支持直接删除）
+// functions/api/list-all-keys.js - 修复 cursor 类型
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -23,10 +23,14 @@ export async function onRequest({ request, env }) {
             let deletedCount = 0;
             let failedCount = 0;
             let cursor = null;
-            let hasMore = true;
             
-            while (hasMore) {
-                const listResult = await NAV_KV.list({ limit: 256, cursor: cursor });
+            while (true) {
+                const options = { limit: 256 };
+                if (cursor) {
+                    options.cursor = cursor;
+                }
+                const listResult = await NAV_KV.list(options);
+                
                 if (listResult && listResult.keys) {
                     for (const key of listResult.keys) {
                         try {
@@ -37,8 +41,9 @@ export async function onRequest({ request, env }) {
                         }
                     }
                 }
+                
                 cursor = listResult.cursor;
-                hasMore = !!cursor;
+                if (!cursor) break;
             }
             
             return new Response(JSON.stringify({ 
@@ -58,17 +63,22 @@ export async function onRequest({ request, env }) {
     try {
         let allKeys = [];
         let cursor = null;
-        let hasMore = true;
         
-        while (hasMore) {
-            const listResult = await NAV_KV.list({ limit: 256, cursor: cursor });
+        while (true) {
+            const options = { limit: 256 };
+            if (cursor) {
+                options.cursor = cursor;
+            }
+            const listResult = await NAV_KV.list(options);
+            
             if (listResult && listResult.keys) {
                 for (const key of listResult.keys) {
                     allKeys.push(key.name);
                 }
             }
+            
             cursor = listResult.cursor;
-            hasMore = !!cursor;
+            if (!cursor) break;
         }
         
         allKeys.sort();
