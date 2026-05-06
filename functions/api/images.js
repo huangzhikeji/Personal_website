@@ -1,4 +1,4 @@
-// functions/api/images.js - 修复清空KV数据功能
+// functions/api/images.js - 完整版（含清理未引用图片功能）
 export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     
@@ -75,7 +75,7 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有图片（只删除图片文件和列表）
+    // 清空所有图片
     if (request.method === 'DELETE' && url.searchParams.get('all') === '1') {
         try {
             const existingList = await NAV_KV.get('image_urls');
@@ -97,10 +97,9 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 清空所有KV数据（不使用list()，只删除已知key）
+    // 清空所有KV数据
     if (request.method === 'DELETE' && url.searchParams.get('clear') === '1') {
         try {
-            // 1. 清空图片
             const existingList = await NAV_KV.get('image_urls');
             if (existingList) {
                 const imageList = JSON.parse(existingList);
@@ -110,29 +109,17 @@ export async function onRequest({ request, env }) {
             }
             await NAV_KV.put('image_urls', JSON.stringify([]));
             
-            // 2. 删除已知的固定key
-            const fixedKeys = [
-                'blog_posts',
-                'sites', 
-                'site_title',
-                'site_subtitle',
-                'site_logo',
-                'site_logo_link',
-                'header_bg',
-                'cn_link',
-                'admin_username',
-                'admin_password'
+            const keysToDelete = [
+                'blog_posts', 'sites', 'site_title', 'site_subtitle',
+                'site_logo', 'site_logo_link', 'header_bg', 'cn_link',
+                'admin_username', 'admin_password'
             ];
             
-            for (const key of fixedKeys) {
+            for (const key of keysToDelete) {
                 try { await NAV_KV.delete(key); } catch(e) {}
             }
             
-            // 3. 提示用户可能还有遗留数据
-            return new Response(JSON.stringify({ 
-                code: 200, 
-                message: '已清空主要KV数据。如有遗留数据，请手动在控制台删除。' 
-            }), {
+            return new Response(JSON.stringify({ code: 200, message: '已清空主要KV数据' }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         } catch (e) {
@@ -157,16 +144,16 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 管理页面（保持不变）
+    // 管理页面
     return new Response(`<!DOCTYPE html>
 <html>
 <head><meta charset="UTF-8"><title>图片管理</title>
 <style>
 body{font-family:system-ui;padding:20px;background:#f0f2f5}
 .container{max-width:1000px;margin:0 auto}
-.card{background:white;border-radius:12px;padding:20px}
-button{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-right:10px}
-.btn-green{background:#38a169}.btn-red{background:#e53e3e}
+.card{background:white;border-radius:12px;padding:20px;margin-bottom:20px}
+button{background:#667eea;color:white;border:none;padding:8px 16px;border-radius:6px;cursor:pointer;margin-right:10px;margin-bottom:10px}
+.btn-green{background:#38a169}.btn-red{background:#e53e3e}.btn-orange{background:#ed8936}
 .image-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:15px;margin-top:20px}
 .image-card{background:#f8fafc;border-radius:8px;padding:10px;border:1px solid #ddd}
 .image-card img{width:100%;height:100px;object-fit:cover;border-radius:6px}
@@ -176,17 +163,35 @@ button.small{padding:4px 8px;font-size:11px;margin:2px}
 .loading{text-align:center;padding:40px;color:#999}
 .danger-zone{background:#fff5f5;border:1px solid #feb2b2;border-radius:8px;padding:15px;margin-top:20px}
 .danger-zone h3{color:#c53030}
+.info{background:#e6f7ff;border:1px solid #91d5ff;border-radius:8px;padding:12px;margin-bottom:15px;font-size:13px}
 </style>
 </head>
 <body>
 <div class="container">
 <div class="card">
-<h2>图片管理</h2>
-<div><button id="uploadBtn" class="btn-green">上传图片</button><button id="refreshBtn">刷新列表</button><button id="clearImagesBtn" class="btn-red">清空所有图片</button><span id="stats" style="margin-left:10px"></span></div>
+<h2>🖼️ 图片管理</h2>
+<div class="info">
+📌 提示：<br>
+• 上传图片会自动加入列表<br>
+• 点击「复制链接」获取图片URL，可用于文章封面或内容<br>
+• 点击「删除」可移除单张图片<br>
+• 「清理未使用图片」会扫描所有文章，删除未被引用的图片（安全）
+</div>
+<div>
+<button id="uploadBtn" class="btn-green">📤 上传图片</button>
+<button id="refreshBtn">🔄 刷新列表</button>
+<button id="cleanUnusedBtn" class="btn-orange">🧹 清理未使用图片</button>
+<button id="clearImagesBtn" class="btn-red">🗑️ 清空所有图片</button>
+<span id="stats" style="margin-left:10px"></span>
+</div>
 <input type="file" id="fileInput" accept="image/*" style="display:none">
 <div id="imageList" class="image-grid"><div class="loading">加载中...</div></div>
 </div>
-<div class="danger-zone"><h3>危险操作区</h3><p>清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据！</p><button id="clearAllDataBtn" class="btn-red">清空所有KV数据</button></div>
+<div class="danger-zone">
+<h3>⚠️ 危险操作区</h3>
+<p style="font-size:13px">清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
+<button id="clearAllDataBtn" class="btn-red">💀 清空所有KV数据</button>
+</div>
 </div>
 <script>
 async function loadImages(){
@@ -198,18 +203,42 @@ s.innerText='共 '+d.data.length+' 张';
 var html='';
 for(var i=0;i<d.data.length;i++){
 var img=d.data[i],name=img.filename.length>25?img.filename.substring(0,22)+'...':img.filename;
-html+='<div class="image-card"><img src="'+img.url+'"><div class="filename" title="'+img.filename+'">'+name+'</div><div class="actions"><button class="small copy-btn" data-url="'+img.url+'">复制</button><button class="small delete-btn" data-filename="'+img.filename+'">删除</button></div></div>';
+html+='<div class="image-card"><img src="'+img.url+'"><div class="filename" title="'+img.filename+'">📄 '+name+'</div><div class="actions"><button class="small copy-btn" data-url="'+img.url+'">📋 复制</button><button class="small delete-btn" data-filename="'+img.filename+'">🗑️ 删除</button></div></div>';
 }
 c.innerHTML=html;
-document.querySelectorAll('.copy-btn').forEach(btn=>{btn.onclick=()=>{navigator.clipboard.writeText(btn.dataset.url);btn.textContent='已复制';setTimeout(()=>btn.textContent='复制',1500);}});
-document.querySelectorAll('.delete-btn').forEach(btn=>{btn.onclick=async()=>{if(!confirm('确定删除？'))return;var res=await fetch('/api/images',{method:'DELETE',body:JSON.stringify({filename:btn.dataset.filename}),headers:{'Content-Type':'application/json'}});var data=await res.json();if(data.code===200){alert('删除成功');loadImages();}else{alert('删除失败');}}});
-}else{c.innerHTML='<div class="loading">暂无图片</div>';s.innerText='';}
-}catch(e){c.innerHTML='<div class="loading">加载失败</div>';}}
+document.querySelectorAll('.copy-btn').forEach(btn=>{btn.onclick=()=>{navigator.clipboard.writeText(btn.dataset.url);btn.textContent='✓已复制';setTimeout(()=>btn.textContent='📋 复制',1500);}});
+document.querySelectorAll('.delete-btn').forEach(btn=>{btn.onclick=async()=>{if(!confirm('确定删除这张图片？'))return;var res=await fetch('/api/images',{method:'DELETE',body:JSON.stringify({filename:btn.dataset.filename}),headers:{'Content-Type':'application/json'}});var data=await res.json();if(data.code===200){alert('✅ 删除成功');loadImages();}else{alert('❌ 删除失败');}}});
+}else{c.innerHTML='<div class="loading">📭 暂无图片，点击「上传图片」添加</div>';s.innerText='';}
+}catch(e){c.innerHTML='<div class="loading">❌ 加载失败</div>';}}
+
+// 清理未使用图片
+document.getElementById('cleanUnusedBtn').onclick=async()=>{
+if(!confirm('🧹 扫描并删除未被任何文章引用的图片？\n\n此操作不会删除文章正在使用的图片，是安全的。'))return;
+var btn=document.getElementById('cleanUnusedBtn');
+var originalText=btn.textContent;
+btn.textContent='⏳ 扫描中...';
+btn.disabled=true;
+try{
+var res=await fetch('/api/clean-unused-images',{method:'POST'});
+var data=await res.json();
+if(data.code===200){
+alert('✅ 清理完成！\n\n📊 统计：\n总图片: '+data.total+' 张\n引用中: '+data.referenced+' 张\n未引用: '+data.unused+' 张\n已删除: '+data.deleted+' 张');
+loadImages();
+}else{
+alert('❌ 清理失败: '+(data.message||'未知错误'));
+}
+}catch(err){
+alert('❌ 清理失败: '+err.message);
+}finally{
+btn.textContent=originalText;
+btn.disabled=false;
+}};
+
 document.getElementById('uploadBtn').onclick=()=>document.getElementById('fileInput').click();
-document.getElementById('fileInput').onchange=async(e)=>{var f=e.target.files[0];if(!f)return;var fd=new FormData();fd.append('image',f);var btn=document.getElementById('uploadBtn');btn.textContent='上传中...';btn.disabled=true;try{var r=await fetch('/api/images',{method:'POST',body:fd});var d=await r.json();if(d.code===200){alert('上传成功');loadImages();}else{alert('上传失败');}}catch(err){alert('上传失败');}finally{btn.textContent='上传图片';btn.disabled=false;e.target.value='';}};
+document.getElementById('fileInput').onchange=async(e)=>{var f=e.target.files[0];if(!f)return;var fd=new FormData();fd.append('image',f);var btn=document.getElementById('uploadBtn');btn.textContent='⏳ 上传中...';btn.disabled=true;try{var r=await fetch('/api/images',{method:'POST',body:fd});var d=await r.json();if(d.code===200){alert('✅ 上传成功');loadImages();}else{alert('❌ 上传失败: '+d.message);}}catch(err){alert('❌ 上传失败');}finally{btn.textContent='📤 上传图片';btn.disabled=false;e.target.value='';}};
 document.getElementById('refreshBtn').onclick=loadImages;
-document.getElementById('clearImagesBtn').onclick=async()=>{if(!confirm('清空所有图片？'))return;var res=await fetch('/api/images?all=1',{method:'DELETE'});var data=await res.json();alert(data.message);loadImages();};
-document.getElementById('clearAllDataBtn').onclick=async()=>{if(!confirm('清空所有KV数据？输入"确认删除"继续'))return;if(prompt('请输入"确认删除"')!=='确认删除')return;var res=await fetch('/api/images?clear=1',{method:'DELETE'});var data=await res.json();alert(data.message);loadImages();};
+document.getElementById('clearImagesBtn').onclick=async()=>{if(!confirm('⚠️ 清空所有图片？\n\n这将删除KV中所有图片文件，文章中的图片将无法显示！'))return;var res=await fetch('/api/images?all=1',{method:'DELETE'});var data=await res.json();alert(data.message);loadImages();};
+document.getElementById('clearAllDataBtn').onclick=async()=>{if(!confirm('💀 最终确认：这将删除KV存储中的所有数据！\n\n包括：\n- 所有文章\n- 所有书签\n- 所有图片\n- 站点设置\n- 管理员密码\n\n此操作不可恢复！\n\n输入"确认删除"以继续'))return;if(prompt('请输入"确认删除"')!=='确认删除')return;var res=await fetch('/api/images?clear=1',{method:'DELETE'});var data=await res.json();alert(data.message);loadImages();};
 loadImages();
 </script>
 </body>
