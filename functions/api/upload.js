@@ -1,3 +1,4 @@
+// functions/api/upload.js - 完整版（含更新图片列表）
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -15,17 +16,20 @@ export async function onRequest({ request, env }) {
     try {
         const formData = await request.formData();
         const file = formData.get('image');
+        
         if (!file || !file.type.startsWith('image/')) {
-            return new Response(JSON.stringify({ code: 400, message: '请选择图片' }), {
+            return new Response(JSON.stringify({ code: 400, message: '请选择图片文件' }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
-        if (file.size > 5 * 1024 * 1024) {
-            return new Response(JSON.stringify({ code: 400, message: '图片不能超过5MB' }), {
+        
+        // 限制 2MB
+        if (file.size > 2 * 1024 * 1024) {
+            return new Response(JSON.stringify({ code: 400, message: '图片不能超过2MB' }), {
                 headers: { 'Content-Type': 'application/json' }
             });
         }
-
+        
         const bytes = new Uint8Array(await file.arrayBuffer());
         let binary = '';
         const CHUNK = 8192;
@@ -33,13 +37,22 @@ export async function onRequest({ request, env }) {
             binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
         }
         const base64 = btoa(binary);
-
+        
         const ext = file.type.split('/')[1] || 'jpg';
-        const filename = `${Date.now()}_${Math.random().toString(36).substr(2, 6)}.${ext}`;
-        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`, {
-            expirationTtl: 86400 * 30
-        });
-
+        const filename = Date.now() + '.' + ext;
+        
+        // 保存图片
+        await NAV_KV.put(`img:${filename}`, `data:${file.type};base64,${base64}`);
+        
+        // ========== 更新图片列表 ==========
+        let imageList = [];
+        const listData = await NAV_KV.get('image_urls');
+        if (listData) {
+            try { imageList = JSON.parse(listData); } catch(e) {}
+        }
+        imageList.unshift({ filename: filename, url: `/api/image/${filename}` });
+        await NAV_KV.put('image_urls', JSON.stringify(imageList));
+        
         return new Response(JSON.stringify({ code: 200, url: `/api/image/${filename}` }), {
             headers: { 'Content-Type': 'application/json' }
         });
