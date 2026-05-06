@@ -24,7 +24,6 @@
     { "routePath": "/post/*", "handler": "post/[[slug]]" },
     { "routePath": "/api/referenced-images", "handler": "api/referenced-images" },
     { "routePath": "/api/clean-unused-images", "handler": "api/clean-unused-images" },
-    { "routePath": "/api/list-all-keys", "handler": "api/list-all-keys" },
     { "routePath": "/api/site-info", "handler": "api/site-info" }
   ]
 }
