@@ -1,4 +1,4 @@
-// functions/api/list-all-keys.js - 修复 key 格式
+// functions/api/list-all-keys.js - 简化版
 export async function onRequest({ request, env }) {
     const cookie = request.headers.get('Cookie') || '';
     const match = cookie.match(/admin_token=([^;]+)/);
@@ -17,42 +17,29 @@ export async function onRequest({ request, env }) {
     const url = new URL(request.url);
     const action = url.searchParams.get('action');
     
-    // 执行删除所有
     if (action === 'delete-all') {
         try {
+            // 使用和图片管理相同的方式删除
+            const existingList = await NAV_KV.get('image_urls');
             let deletedCount = 0;
-            let failedCount = 0;
-            let cursor = null;
             
-            while (true) {
-                const options = { limit: 256 };
-                if (cursor) {
-                    options.cursor = cursor;
+            if (existingList) {
+                const imageList = JSON.parse(existingList);
+                for (let i = 0; i < imageList.length; i++) {
+                    try {
+                        await NAV_KV.delete('img:' + imageList[i].filename);
+                        deletedCount++;
+                    } catch(e) {}
                 }
-                const listResult = await NAV_KV.list(options);
-                
-                if (listResult && listResult.keys) {
-                    for (const key of listResult.keys) {
-                        // 直接使用 key.name，不要做任何处理
-                        const keyName = key.name;
-                        try {
-                            await NAV_KV.delete(keyName);
-                            deletedCount++;
-                        } catch(e) {
-                            failedCount++;
-                        }
-                    }
-                }
-                
-                cursor = listResult.cursor;
-                if (!cursor) break;
             }
+            
+            // 清空列表
+            await NAV_KV.put('image_urls', JSON.stringify([]));
             
             return new Response(JSON.stringify({ 
                 code: 200, 
                 message: '删除完成',
-                deleted: deletedCount,
-                failed: failedCount
+                deleted: deletedCount
             }), { headers: { 'Content-Type': 'application/json' } });
         } catch (e) {
             return new Response(JSON.stringify({ code: 500, message: e.message }), {
@@ -61,29 +48,12 @@ export async function onRequest({ request, env }) {
         }
     }
     
-    // 扫描所有 keys
+    // 扫描 - 只返回图片相关的 key
     try {
-        let allKeys = [];
-        let cursor = null;
-        
-        while (true) {
-            const options = { limit: 256 };
-            if (cursor) {
-                options.cursor = cursor;
-            }
-            const listResult = await NAV_KV.list(options);
-            
-            if (listResult && listResult.keys) {
-                for (const key of listResult.keys) {
-                    // 直接使用 key.name，不做任何修改
-                    allKeys.push(key.name);
-                }
-            }
-            
-            cursor = listResult.cursor;
-            if (!cursor) break;
-        }
-        
+        const existingList = await NAV_KV.get('image_urls');
+        let images = existingList ? JSON.parse(existingList) : [];
+        let allKeys = images.map(function(img) { return 'img:' + img.filename; });
+        allKeys.push('image_urls');
         allKeys.sort();
         
         return new Response(JSON.stringify({ code: 200, keys: allKeys, total: allKeys.length }), {
