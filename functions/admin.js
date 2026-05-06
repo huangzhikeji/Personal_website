@@ -67,7 +67,7 @@ export async function onRequest({ request, env }) {
 </head>
 <body>
     <div class="login-box">
-        <h2>🔐 管理员登录</h2>
+        <h2>管理员登录</h2>
         <form method="post" action="/admin">
             <div class="form-group">
                 <label>账号</label>
@@ -79,13 +79,12 @@ export async function onRequest({ request, env }) {
             </div>
             <button type="submit">登录</button>
         </form>
-        <div class="back-link"><a href="/">← 返回首页</a></div>
+        <div class="back-link"><a href="/">返回首页</a></div>
     </div>
 </body>
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
     }
     
-    // 已登录显示完整后台
     return new Response(`<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -113,6 +112,7 @@ export async function onRequest({ request, env }) {
         .btn-danger{background:#e53e3e;color:white}
         .btn-warning{background:#ed8936;color:white}
         .btn-secondary{background:#718096;color:white}
+        .btn-orange{background:#ed8936}
         .logo-section{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px}
         .logo-preview{display:flex;align-items:center;gap:14px;margin-bottom:14px}
         .logo-preview img{max-width:80px;max-height:80px;width:auto;height:auto;object-fit:contain;border-radius:8px;border:1px solid #e2e8f0}
@@ -136,33 +136,34 @@ export async function onRequest({ request, env }) {
         #quill-editor-wrap .ql-container{border-radius:0 0 8px 8px;border-color:#e2e8f0;min-height:280px;font-size:15px}
         #quill-editor-wrap .ql-editor{min-height:280px;line-height:1.7}
         #quill-editor-wrap .ql-editor img{max-width:100%;margin:8px 0}
+        .danger-zone{background:#fff5f5;border:1px solid #feb2b2;border-radius:8px;padding:15px;margin-top:20px}
+        .danger-zone h3{color:#c53030;margin-bottom:10px}
     </style>
 </head>
 <body>
 <div class="container">
     <div class="header">
-        <h1>📚 旭儿导航 · 管理后台</h1>
-<div class="header-buttons">
-    <a href="/api/images" target="_blank" style="background:rgba(255,255,255,0.2);padding:8px 16px;border-radius:8px;text-decoration:none;color:white;margin-right:10px">🖼️ 图片管理</a>
-    <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">🔑 修改密码</button>
-    <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
-</div>
+        <h1>旭儿导航 · 管理后台</h1>
+        <div class="header-buttons">
+            <button id="changePwdBtn" style="background:rgba(255,255,255,0.2)">修改密码</button>
+            <button id="logoutBtn" style="background:rgba(255,255,255,0.2)">退出登录</button>
+        </div>
     </div>
     
     <div class="card">
-        <div class="card-title">📝 博客管理</div>
+        <div class="card-title">博客管理</div>
         <div class="blog-toolbar">
             <div class="blog-search-row" style="margin-bottom:16px;display:flex;gap:10px">
-                <input type="text" id="blogSearchInput" placeholder="🔍 搜索文章...">
+                <input type="text" id="blogSearchInput" placeholder="搜索文章...">
                 <select id="blogStatusFilter"><option value="all">全部</option><option value="published">已发布</option><option value="draft">草稿</option></select>
-                <button id="newPostBtn" class="btn-success" style="white-space:nowrap">✏️ 写新文章</button>
+                <button id="newPostBtn" class="btn-success" style="white-space:nowrap">写新文章</button>
             </div>
         </div>
         <div id="blogList"></div>
     </div>
 
     <div class="card">
-        <div class="card-title">📋 书签列表</div>
+        <div class="card-title">书签列表</div>
         <div id="message" class="message"></div>
         <div style="overflow-x:auto">
             <table>
@@ -175,33 +176,45 @@ export async function onRequest({ request, env }) {
 
 <div class="grid-top">
     <div class="card">
-        <div class="card-title">🖼️ Logo 设置</div>
+        <div class="card-title">Logo 设置</div>
         <div class="logo-section">
             <div class="logo-preview"><img id="logoPreview" style="display:none"><span id="noLogoHint">暂未设置 Logo</span></div>
-            <div class="logo-input-row"><input type="text" id="logoInput" placeholder="Logo 图片 URL（或点击上传）"><button id="uploadLogoBtn" class="btn-warning">📁 上传</button><button id="saveLogoBtn" class="btn-success">保存</button><button id="deleteLogoBtn" class="btn-danger">🗑️ 删除</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="logoInput" placeholder="Logo 图片 URL（或点击上传）">
+                <button id="uploadLogoBtn" class="btn-warning">上传</button>
+                <button id="saveLogoBtn" class="btn-success">保存</button>
+                <button id="deleteLogoBtn" class="btn-danger">删除</button>
+            </div>
             <input type="file" id="logoFileInput" accept="image/*" style="display:none">
-            <div class="logo-input-row"><input type="text" id="logoLinkInput" placeholder="Logo 点击跳转链接（可留空）"><button id="saveLogoLinkBtn" class="btn-success">保存</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="logoLinkInput" placeholder="Logo 点击跳转链接（可留空）">
+                <button id="saveLogoLinkBtn" class="btn-success">保存</button>
+            </div>
         </div>
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid #e2e8f0">
-            <div style="font-size:13px;font-weight:600;color:#4a5568;margin-bottom:10px">🖼️ 页眉背景图</div>
+            <div style="font-size:13px;font-weight:600;color:#4a5568;margin-bottom:10px">页眉背景图</div>
             <div id="headerBgPreviewWrap" style="display:none;margin-bottom:10px"><img id="headerBgPreview" style="width:100%;max-height:100px;object-fit:cover;border-radius:8px;border:1px solid #e2e8f0"></div>
-            <div class="logo-input-row"><input type="text" id="headerBgInput" placeholder="背景图 URL（留空恢复默认渐变）"><button id="uploadHeaderBgBtn" class="btn-warning">📁 上传</button><button id="saveHeaderBgBtn" class="btn-success">保存</button></div>
+            <div class="logo-input-row">
+                <input type="text" id="headerBgInput" placeholder="背景图 URL（留空恢复默认渐变）">
+                <button id="uploadHeaderBgBtn" class="btn-warning">上传</button>
+                <button id="saveHeaderBgBtn" class="btn-success">保存</button>
+            </div>
             <input type="file" id="headerBgFileInput" accept="image/*" style="display:none">
             <small style="color:#a0aec0">留空并保存可恢复默认紫色渐变背景</small>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">🌐 站点信息</div>
-        <div class="form-group"><label for="siteTitleInput">站点标题</label><input type="text" id="siteTitleInput" placeholder="旭儿导航" maxlength="50"></div>
-        <div class="form-group"><label for="siteSubtitleInput">站点副标题</label><input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100"></div>
-        <div class="form-group"><label for="cnLinkInput">🇨🇳 国内线路链接</label><input type="url" id="cnLinkInput" placeholder="https://你的国内备用域名.com"></div>
-        <button id="saveSiteInfoBtn" class="btn-primary">💾 保存站点信息</button>
+        <div class="card-title">站点设置</div>
+        <div class="form-group"><label>站点标题</label><input type="text" id="siteTitleInput" placeholder="旭儿导航" maxlength="50"></div>
+        <div class="form-group"><label>站点副标题</label><input type="text" id="siteSubtitleInput" placeholder="精选网站 · 优质博客" maxlength="100"></div>
+        <div class="form-group"><label>国内线路链接</label><input type="url" id="cnLinkInput" placeholder="https://你的国内备用域名.com"><small style="color:#a0aec0">填写后首页标题旁会显示按钮</small></div>
+        <button id="saveSiteInfoBtn" class="btn-primary">保存站点信息</button>
         <span id="siteInfoStatus" style="margin-left:10px;font-size:13px;"></span>
     </div>
     
     <div class="card">
-        <div class="card-title">➕ 添加书签</div>
+        <div class="card-title">添加书签</div>
         <form id="addForm">
             <div class="form-group"><label>名称 *</label><input type="text" id="name" required placeholder="网站名称"></div>
             <div class="form-group"><label>网址 *</label><input type="url" id="url" required placeholder="https://"></div>
@@ -209,11 +222,19 @@ export async function onRequest({ request, env }) {
             <div class="form-group"><label>Logo URL</label><input type="url" id="logo" placeholder="https://"></div>
             <div class="form-group"><label>描述</label><textarea id="desc" rows="2" placeholder="简短描述（可选）"></textarea></div>
             <div class="form-group"><label>排序</label><input type="number" id="sort_order" value="9999"></div>
-            <button type="submit" class="btn-success" style="width:100%;margin-top:4px">➕ 添加书签</button>
+            <button type="submit" class="btn-success" style="width:100%;margin-top:4px">添加书签</button>
         </form>
     </div>
 </div>
 
+<div class="danger-zone">
+    <h3>危险操作区</h3>
+    <p style="font-size:13px; margin-bottom:15px">清空所有KV数据将删除：文章、书签、图片、站点设置、管理员密码等所有数据，不可恢复！</p>
+    <button id="clearAllDataBtn" class="btn-danger">清空所有KV数据</button>
+    <button id="cleanUnusedImagesBtn" class="btn-orange" style="margin-left:10px">清理未使用图片</button>
+</div>
+
+<!-- 文章编辑弹窗 -->
 <div id="postModal" class="modal">
     <div class="blog-modal-content">
         <div class="modal-header"><h3 id="postModalTitle">写新文章</h3><span class="close-post-modal" style="font-size:22px;cursor:pointer;color:#a0aec0">&times;</span></div>
@@ -229,16 +250,20 @@ export async function onRequest({ request, env }) {
         <div id="quill-editor-wrap"><div id="quill-editor"></div></div>
         <textarea id="postContent" style="display:none"></textarea>
         <div class="form-group"><label>标签</label><input type="text" id="postTags" placeholder="技术,生活"></div>
-        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px"><input type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b"><label for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">📌 置顶文章 <small style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）</small></label></div>
+        <div class="form-group" style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#fffbeb;border:1px solid #f59e0b;border-radius:8px">
+            <input type="checkbox" id="postPinned" style="width:16px;height:16px;cursor:pointer;accent-color:#f59e0b">
+            <label for="postPinned" style="cursor:pointer;font-weight:600;color:#92400e;margin:0">置顶文章 <small style="font-weight:400;color:#a0aec0">（仅后台可见，前台文章排序靠前）</small></label>
+        </div>
         <div class="form-actions"><button type="button" id="cancelPostBtn" class="btn-secondary">取消</button><button type="button" id="savePostBtn" class="btn-success">保存</button></div>
     </div>
 </div>
 
 <input type="file" id="blogFileInput" accept="image/*" style="display:none">
 
+<!-- 编辑书签弹窗 -->
 <div id="editModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h3>✏️ 编辑书签</h3><span class="close-modal">&times;</span></div>
+        <div class="modal-header"><h3>编辑书签</h3><span class="close-modal">&times;</span></div>
         <form id="editForm">
             <input type="hidden" id="edit_id">
             <div class="form-group"><label>名称 *</label><input type="text" id="edit_name" required></div>
@@ -252,9 +277,10 @@ export async function onRequest({ request, env }) {
     </div>
 </div>
 
+<!-- 修改密码弹窗 -->
 <div id="changePwdModal" class="modal">
     <div class="modal-content">
-        <div class="modal-header"><h3>🔑 修改密码</h3><span class="close-pwd-modal">&times;</span></div>
+        <div class="modal-header"><h3>修改密码</h3><span class="close-pwd-modal">&times;</span></div>
         <form id="changePwdForm">
             <div class="form-group"><label>原密码 *</label><input type="password" id="old_password" required></div>
             <div class="form-group"><label>新密码 *</label><input type="password" id="new_password" required></div>
@@ -283,14 +309,19 @@ function escapeHtml(str) {
     });
 }
 
+// Logo 和背景图管理
 async function loadLogo() {
     const res = await fetch('/api/logo');
     const data = await res.json();
-    if (data.code === 200 && data.logo) {
-        document.getElementById('logoPreview').src = data.logo;
-        document.getElementById('logoPreview').style.display = 'block';
+    const logoUrl = data.logo || '/img/logo.png';
+    const logoPreview = document.getElementById('logoPreview');
+    if (logoPreview) {
+        logoPreview.src = logoUrl;
+        logoPreview.style.display = 'block';
         document.getElementById('noLogoHint').style.display = 'none';
     }
+    const logoInput = document.getElementById('logoInput');
+    if (logoInput) logoInput.value = logoUrl;
 }
 
 async function loadLogoLink() {
@@ -307,6 +338,10 @@ async function loadHeaderBg() {
     if (data.code === 200 && data.bg) {
         document.getElementById('headerBgInput').value = data.bg;
         document.getElementById('headerBgPreview').src = data.bg;
+        document.getElementById('headerBgPreviewWrap').style.display = 'block';
+    } else {
+        document.getElementById('headerBgInput').value = '/img/bg.jpg';
+        document.getElementById('headerBgPreview').src = '/img/bg.jpg';
         document.getElementById('headerBgPreviewWrap').style.display = 'block';
     }
 }
@@ -342,7 +377,8 @@ document.getElementById('saveHeaderBgBtn').onclick = async () => {
             document.getElementById('headerBgPreview').src = bg;
             document.getElementById('headerBgPreviewWrap').style.display = 'block';
         } else {
-            document.getElementById('headerBgPreviewWrap').style.display = 'none';
+            document.getElementById('headerBgPreview').src = '/img/bg.jpg';
+            document.getElementById('headerBgPreviewWrap').style.display = 'block';
         }
     } else { showMessage('保存失败', 'error'); }
 };
@@ -376,8 +412,9 @@ document.getElementById('saveLogoBtn').onclick = async () => {
             document.getElementById('logoPreview').style.display = 'block';
             document.getElementById('noLogoHint').style.display = 'none';
         } else {
-            document.getElementById('logoPreview').style.display = 'none';
-            document.getElementById('noLogoHint').style.display = 'inline';
+            document.getElementById('logoPreview').src = '/img/logo.png';
+            document.getElementById('logoPreview').style.display = 'block';
+            document.getElementById('noLogoHint').style.display = 'none';
         }
     } else { showMessage('保存失败', 'error'); }
 };
@@ -388,9 +425,10 @@ document.getElementById('deleteLogoBtn').onclick = async () => {
     const res = await fetch('/api/logo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ logo: '' }) });
     const data = await res.json();
     if (data.code === 200) {
-        document.getElementById('logoPreview').style.display = 'none';
-        document.getElementById('noLogoHint').style.display = 'inline';
-        showMessage('Logo 已删除', 'success');
+        document.getElementById('logoPreview').src = '/img/logo.png';
+        document.getElementById('logoPreview').style.display = 'block';
+        document.getElementById('noLogoHint').style.display = 'none';
+        showMessage('Logo 已恢复默认', 'success');
     } else { showMessage('删除失败', 'error'); }
 };
 
@@ -402,6 +440,7 @@ document.getElementById('saveLogoLinkBtn').onclick = async () => {
     else { showMessage('保存失败', 'error'); }
 };
 
+// 书签管理
 async function loadSites() {
     const res = await fetch('/api/config');
     const data = await res.json();
@@ -487,11 +526,13 @@ document.getElementById('editForm').onsubmit = async (e) => {
     else showMessage('修改失败', 'error');
 };
 
+// 退出登录
 document.getElementById('logoutBtn').onclick = async () => {
     await fetch('/logout', { method: 'POST' });
     window.location.href = '/';
 };
 
+// 修改密码
 const changePwdModal = document.getElementById('changePwdModal');
 function openChangePwdModal() { changePwdModal.style.display = 'flex'; }
 function closeChangePwdModal() { changePwdModal.style.display = 'none'; }
@@ -528,16 +569,10 @@ window.onclick = (e) => {
 document.querySelector('.close-modal').onclick = closeModal;
 document.querySelector('.close-modal-btn').onclick = closeModal;
 
-loadLogo();
-loadSiteInfo();
-loadLogoLink();
-loadHeaderBg();
-loadSites();
-loadBlogPosts();
-
+// 博客管理
 let allPosts = [];
-
 let quill = null;
+
 function initQuill() {
     if (quill) return;
     quill = new Quill('#quill-editor', {
@@ -614,32 +649,22 @@ function renderBlogList() {
         document.getElementById('blogList').innerHTML = '<p style="color:#a0aec0;padding:20px 0">暂无文章</p>'; 
         return; 
     }
-    let h = '<table><thead>';
-    h += '<tr><th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">ID</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">标题</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">分类</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">状态</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">日期</th>';
-    h += '<th style="padding:10px;text-align:left;border-bottom:2px solid #e2e8f0">操作</th></tr>';
-    h += '</thead><tbody>';
+    let h = '<table><thead><tr><th>ID</th><th>标题</th><th>分类</th><th>状态</th><th>日期</th><th>操作</th></tr></thead><tbody>';
     for (const p of fl) {
-        const badge = p.status === 'published'
-            ? '<span class="status-badge status-published">已发布</span>'
-            : '<span class="status-badge status-draft">草稿</span>';
+        const badge = p.status === 'published' ? '<span style="color:#38a169">已发布</span>' : '<span style="color:#ed8936">草稿</span>';
         const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString('zh-CN') : '-';
-        h += '<tr>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + p.id + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0"><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? '<span class="pin-badge">📌置顶</span>' : '') + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + escapeHtml(p.category || '未分类') + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + badge + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0">' + date + '</td>';
-        h += '<td style="padding:10px;border-bottom:1px solid #e2e8f0" class="actions"><button class="btn-warning blog-edit" data-id="' + p.id + '" style="padding:4px 12px;background:#ed8936;color:white;border:none;border-radius:6px;cursor:pointer;margin-right:8px">编辑</button><button class="btn-danger blog-del" data-id="' + p.id + '" style="padding:4px 12px;background:#e53e3e;color:white;border:none;border-radius:6px;cursor:pointer">删除</button></td>';
-        h += '</tr>';
+        h += '<tr>' +
+            '<td>' + p.id + '</td>' +
+            '<td><strong>' + escapeHtml(p.title) + '</strong>' + (p.pinned ? ' <span style="background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:12px;font-size:11px">置顶</span>' : '') + '</td>' +
+            '<td>' + escapeHtml(p.category || '未分类') + '</td>' +
+            '<td>' + badge + '</td>' +
+            '<td>' + date + '</td>' +
+            '<td><button class="blog-edit" data-id="' + p.id + '" style="background:#ed8936;color:white;border:none;padding:4px 12px;border-radius:6px;cursor:pointer;margin-right:8px">编辑</button><button class="blog-del" data-id="' + p.id + '" style="background:#e53e3e;color:white;border:none;padding:4px 12px;border-radius:6px;cursor:pointer">删除</button></td>' +
+        '</tr>';
     }
     h += '</tbody></table>';
     document.getElementById('blogList').innerHTML = h;
     
-    // 重新绑定事件
     document.querySelectorAll('.blog-edit').forEach(btn => {
         btn.onclick = () => openPostModal(parseInt(btn.dataset.id));
     });
@@ -720,11 +745,11 @@ document.getElementById('savePostBtn').onclick = async () => {
 
 document.getElementById('blogSearchInput').addEventListener('input', renderBlogList);
 document.getElementById('blogStatusFilter').addEventListener('change', renderBlogList);
-
 document.getElementById('postModal').addEventListener('click', e => {
     if (e.target === document.getElementById('postModal')) closePostModal();
 });
 
+// 站点信息
 async function loadSiteInfo() {
     try {
         const res = await fetch('/api/site-info');
@@ -744,7 +769,7 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
     const subtitle = document.getElementById('siteSubtitleInput').value.trim();
     const cnLink = document.getElementById('cnLinkInput').value.trim();
     btn.disabled = true;
-    status.textContent = '保存中…';
+    status.textContent = '保存中...';
     try {
         const res = await fetch('/api/site-info', {
             method: 'POST',
@@ -754,19 +779,75 @@ document.getElementById('saveSiteInfoBtn').addEventListener('click', async () =>
         const data = await res.json();
         if (data.success) {
             status.style.color = '#4caf50';
-            status.textContent = '✅ 保存成功';
+            status.textContent = '保存成功';
         } else {
             status.style.color = '#f44336';
-            status.textContent = '❌ ' + (data.error || '保存失败');
+            status.textContent = '保存失败';
         }
     } catch (e) {
         status.style.color = '#f44336';
-        status.textContent = '❌ 网络错误';
+        status.textContent = '网络错误';
     } finally {
         btn.disabled = false;
         setTimeout(() => { status.textContent = ''; }, 3000);
     }
 });
+
+// 清理未使用图片
+document.getElementById('cleanUnusedImagesBtn').onclick = async function() {
+    if (!confirm('扫描并删除未被任何文章引用的图片？\n\n此操作不会删除文章正在使用的图片，是安全的。')) return;
+    var btn = this;
+    var originalText = btn.textContent;
+    btn.textContent = '扫描中...';
+    btn.disabled = true;
+    try {
+        var scanRes = await fetch('/api/referenced-images');
+        var scanData = await scanRes.json();
+        if (scanData.code !== 200) {
+            alert('扫描失败: ' + (scanData.message || '未知错误'));
+            return;
+        }
+        if (scanData.unused === 0) {
+            alert('没有未使用的图片，无需清理。\n\n总图片: ' + scanData.total + ' 张\n引用中: ' + scanData.referenced + ' 张');
+            return;
+        }
+        if (!confirm('发现 ' + scanData.unused + ' 张未使用的图片。\n\n总图片: ' + scanData.total + ' 张\n引用中: ' + scanData.referenced + ' 张\n未使用: ' + scanData.unused + ' 张\n\n确定要删除它们吗？此操作不可恢复！')) return;
+        
+        btn.textContent = '清理中...';
+        var cleanRes = await fetch('/api/clean-unused-images', { method: 'POST' });
+        var cleanData = await cleanRes.json();
+        if (cleanData.code === 200) {
+            alert('清理完成！\n\n总图片: ' + cleanData.total + ' 张\n引用中: ' + cleanData.referenced + ' 张\n未引用: ' + cleanData.unused + ' 张\n已删除: ' + cleanData.deleted + ' 张');
+            location.reload();
+        } else {
+            alert('清理失败: ' + (cleanData.message || '未知错误'));
+        }
+    } catch (err) {
+        alert('操作失败: ' + err.message);
+    } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+    }
+};
+
+// 清空所有KV数据
+document.getElementById('clearAllDataBtn').onclick = async function() {
+    if (!confirm('最终确认：这将删除KV存储中的所有数据！\n\n包括：\n- 所有文章\n- 所有书签\n- 所有图片\n- 站点设置\n- 管理员密码\n\n此操作不可恢复！\n\n输入"确认删除"以继续')) return;
+    var input = prompt('请输入"确认删除"');
+    if (input !== '确认删除') return;
+    var res = await fetch('/api/images?clear=1', { method: 'DELETE' });
+    var data = await res.json();
+    alert(data.message);
+    location.reload();
+};
+
+// 初始化
+loadLogo();
+loadSiteInfo();
+loadLogoLink();
+loadHeaderBg();
+loadSites();
+loadBlogPosts();
 </script>
 </body>
 </html>`, { headers: { 'Content-Type': 'text/html; charset=utf-8' } });
