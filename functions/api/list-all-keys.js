@@ -19,9 +19,13 @@ export async function onRequest({ request, env }) {
         let cursor = null;
         let hasMore = true;
         
-        // 分页获取所有 keys
+        // limit 最大值为 256
         while (hasMore) {
-            const listResult = await NAV_KV.list({ cursor: cursor, limit: 1000 });
+            const options = { limit: 256 };
+            if (cursor) {
+                options.cursor = cursor;
+            }
+            const listResult = await NAV_KV.list(options);
             if (listResult && listResult.keys) {
                 for (const key of listResult.keys) {
                     allKeys.push(key.name);
