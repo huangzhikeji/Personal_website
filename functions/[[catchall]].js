@@ -148,16 +148,16 @@ export async function onRequest({ env, request }) {
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">${logoHtml}</div>
         <div class="sidebar-nav">
-            <a href="/?tab=blog" style="display:block;padding:10px;background:#e2e8f0;border-radius:8px;text-align:center;margin-bottom:15px;text-decoration:none;color:#667eea;font-weight:600">📝 博客列表</a>
+            <a href="/?tab=blog" style="display:block;padding:10px;background:#e2e8f0;border-radius:8px;text-align:center;margin-bottom:15px;text-decoration:none;color:#667eea;font-weight:600">综合网站内容列表</a>
             <div style="font-weight:600;margin:15px 0 10px">📁 书签分类</div>
-            ${catNavHtml || '<div>暂无分类</div>'}
+            ${catNavHtml || '<div>待添加</div>'}
             <div style="font-weight:600;margin:20px 0 10px">🔥 热门文章</div>
-            ${hotPostsHtml || '<div>暂无</div>'}
+            ${hotPostsHtml || '<div>待添加</div>'}
             <div style="margin-top:20px;padding-top:15px;border-top:1px solid #e2e8f0"><a href="/admin" style="display:block;padding:10px;background:#edf2f7;border-radius:8px;text-align:center;text-decoration:none">⚙️ 后台管理</a></div>
         </div>
     </div>
     <div class="main">
-        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '旭儿导航')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">🇨🇳 国内线路</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
+        <div class="header">${headerBg ? `<img class="header-bg-img" src="${escapeHtml(headerBg)}">` : ''}<div class="header-content"><h1>${escapeHtml(siteTitle || '我的导航')}</h1>${cnLink ? `<a href="${escapeHtml(cnLink)}" class="cn-btn" target="_blank">切换线路</a>` : ''}<p>${escapeHtml(siteSubtitle || '精选网站 · 优质博客')}</p><div>📅 ${new Date().toLocaleDateString('zh-CN')}</div></div></div>
         <div class="content">
             <div class="content-header"><h2>${title}</h2><div class="tab-buttons"><button class="tab-btn ${currentTab === 'blog' ? 'active' : ''}" data-tab="blog">📝 博客</button><button class="tab-btn ${currentTab === 'bookmark' ? 'active' : ''}" data-tab="bookmark">🔖 书签</button></div></div>
             <div id="blog-view" style="display:${currentTab === 'blog' ? 'block' : 'none'}">
