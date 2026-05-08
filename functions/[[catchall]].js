@@ -10,7 +10,7 @@ export async function onRequest({ env, request }) {
     const siteSubtitle = await getSiteSubtitle(env);
     const cnLink = await getCnLink(env);
     
-    if (!logo || logo === '') logo = '/img/logo.png';
+    if (!logo || logo === '') logo = '/img/12.png';
     if (!headerBg || headerBg === '') headerBg = '/img/bg.jpg';
     
     const currentTab = url.searchParams.get('tab') || 'blog';
@@ -185,11 +185,11 @@ export async function onRequest({ env, request }) {
         <!-- 👇 纯新增备案信息，无任何原有代码修改 -->
         <div class="footer-beian">
             <a href="https://beian.miit.gov.cn/" target="_blank">
-                <img src="123.jpg" alt="工信部ICP备案">
+                <img src="/img/123.jpg" alt="工信部ICP备案">
                 皖ICP备2026011798号-1
             </a>
             <a href="https://beian.mps.gov.cn/#/query/webSearch?code=34032202300025" rel="noreferrer" target="_blank">
-                <img src="12.png" alt="公安网安备案">
+                <img src="/img/12.png" alt="公安网安备案">
                 皖公网安备34032202300025号
             </a>
         </div>
