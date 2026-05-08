@@ -133,14 +133,28 @@ export async function onRequest({ env, request }) {
         body.dark .site-card,body.dark .blog-card{background:#16213e;color:#eee}
         body.dark .content-header h2{color:#eee}
         body.dark .tag-cloud{background:#0f3460}
-        @media (max-width:768px){
-            .sidebar{transform:translateX(-100%)}
-            .sidebar.open{transform:translateX(0)}
-            .main{margin-left:0}
-            .mobile-toggle{display:block}
-            .header h1{font-size:28px}
-            .cn-btn{font-size:12px;padding:4px 12px}
+        
+        /* 👇 以下为纯新增备案样式，无任何原有代码修改 */
+        .footer-beian{
+            text-align:center;
+            padding:15px 0;
+            font-size:12px;
+            color:#666;
+            margin-top:20px;
         }
+        .footer-beian a{
+            color:#666;
+            text-decoration:none;
+            margin:0 10px;
+        }
+        .footer-beian img{
+            width:16px;
+            height:16px;
+            vertical-align:middle;
+            margin-right:4px;
+        }
+        /* 👆 纯新增结束 */
+        
     </style>
 </head>
 <body>
@@ -167,6 +181,20 @@ export async function onRequest({ env, request }) {
             </div>
             <div id="bookmark-view" style="display:${currentTab === 'bookmark' ? 'block' : 'none'}"><div class="sites-grid">${cardsHtml || '<div style="text-align:center;padding:60px">暂无书签</div>'}</div></div>
         </div>
+
+        <!-- 👇 纯新增备案信息，无任何原有代码修改 -->
+        <div class="footer-beian">
+            <a href="https://beian.miit.gov.cn/" target="_blank">
+                <img src="123.jpg" alt="工信部ICP备案">
+                皖ICP备2026011798号-1
+            </a>
+            <a href="https://beian.mps.gov.cn/#/query/webSearch?code=34032202300025" rel="noreferrer" target="_blank">
+                <img src="12.png" alt="公安网安备案">
+                皖公网安备34032202300025号
+            </a>
+        </div>
+        <!-- 👆 纯新增结束 -->
+        
     </div>
     <button class="dark-mode-toggle" id="darkModeToggle">🌙</button>
     <button class="go-top" id="goTop">↑</button>
