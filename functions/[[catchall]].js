@@ -167,7 +167,6 @@ export async function onRequest({ env, request }) {
             ${catNavHtml || '<div>待添加</div>'}
             <div style="font-weight:600;margin:20px 0 10px">🔥 热门文章</div>
             ${hotPostsHtml || '<div>待添加</div>'}
-            <div style="margin-top:20px;padding-top:15px;border-top:1px solid #e2e8f0"><a href="/admin" style="display:block;padding:10px;background:#edf2f7;border-radius:8px;text-align:center;text-decoration:none">⚙️ 后台管理</a></div>
         </div>
     </div>
     <div class="main">
